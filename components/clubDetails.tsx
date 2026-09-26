@@ -8,6 +8,7 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { Calendar, MapPin, ArrowLeft } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { formatDisplayName } from "@/lib/utils"
+import { openEmailAll } from "@/lib/email-all"
 import type { Permission } from "@/lib/auth/permissions"
 import { ManageLeadershipDialog } from "./dialogManageLeadership"
 import { EditClubDialog } from "./dialogEditClub"
@@ -273,16 +274,7 @@ export function ClubDetailPage({ clubId }: { clubId: string }) {
   }, [user?.id])
 
   const handleEmailAll = useCallback(() => {
-    // Everyone goes on the "To" line, except the sender
-    const emails = [...new Set(members.map((m) => m.email))].filter(
-      (email) => email && email !== user?.email
-    )
-    if (emails.length === 0) {
-      alert("This club has no other members to email yet.")
-      return
-    }
-    const subject = encodeURIComponent(club?.name ?? "")
-    window.location.href = `mailto:${emails.join(",")}?subject=${subject}`
+    openEmailAll(members.map((m) => m.email), club?.name ?? "", user?.email)
   }, [members, user?.email, club?.name])
 
   // Only block the whole page on the first load; later refreshes (after an

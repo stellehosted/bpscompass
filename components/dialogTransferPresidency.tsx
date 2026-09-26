@@ -51,8 +51,9 @@ export function TransferPresidencyDialog({
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Filter out current user and get eligible members
-  const eligibleMembers = members.filter(m => m.user_id !== currentUserId)
+  // Filter out current user and get eligible members. Sponsors are teachers,
+  // not students, so they can't become president.
+  const eligibleMembers = members.filter(m => m.user_id !== currentUserId && m.role !== "sponsor")
 
   // Co-presidents can just step down; only the last president unclaims the club
   const otherPresidents = members.filter(m => m.role === "president" && m.user_id !== currentUserId).length

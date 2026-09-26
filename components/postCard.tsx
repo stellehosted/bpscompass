@@ -71,7 +71,7 @@ export function PostCard({
   const [rsvp, setRsvp] = useState<Rsvp>(null)
 
   return (
-    <div className="overflow-hidden rounded-[16px] bg-white animate-pop-in">
+    <div className="overflow-hidden rounded-[16px] bg-white shadow-[0_2px_0_rgba(0,34,49,0.16)] animate-pop-in">
       <div className="relative overflow-hidden" style={{ background: "#EAF3FC" }}>
         {post.club_avatar && (
           <div

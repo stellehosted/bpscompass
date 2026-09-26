@@ -25,6 +25,8 @@ interface ClaimSponsorDialogProps {
   isVerifiedTeacher: boolean
   isAlreadySponsor: boolean
   onClaimSuccess: () => void
+  // Replaces the default "Claim as Sponsor" button, e.g. the club card's primary button.
+  trigger?: React.ReactNode
 }
 
 export function ClaimSponsorDialog({
@@ -36,6 +38,7 @@ export function ClaimSponsorDialog({
   isVerifiedTeacher,
   isAlreadySponsor,
   onClaimSuccess,
+  trigger,
 }: ClaimSponsorDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [isConfirmed, setIsConfirmed] = useState(false)
@@ -89,10 +92,12 @@ export function ClaimSponsorDialog({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full" variant="outline">
-          <Shield className="h-4 w-4 mr-2" />
-          Claim as Sponsor
-        </Button>
+        {trigger ?? (
+          <Button className="w-full" variant="outline">
+            <Shield className="h-4 w-4 mr-2" />
+            Claim as Sponsor
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-md w-[calc(100vw-2rem)] sm:w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>

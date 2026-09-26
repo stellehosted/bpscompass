@@ -1,78 +1,25 @@
 "use client"
 
 import { useState, useEffect, useCallback, useMemo } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
+import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import {
-  Users,
-  Calendar,
-  MapPin,
-  Search,
-  Palette,
-  Gamepad2,
-  BookOpen,
-  Trophy,
-  Heart,
-  Code,
-  Crown,
-  Loader2,
-  Grid3X3,
-} from "lucide-react"
+import { Users, Search, Loader2 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
-import { ClaimClubDialog } from "./dialogClaimClub"
-import { ClaimSponsorDialog } from "./dialogClaimSponsor"
-import { CreatePostDialog } from "./dialogCreatePost"
-import { permissionsForRoles, rolesFor } from "@/lib/auth/permissions"
+import { ClubCard, type Club } from "./clubCard"
 
-interface Club {
-  id: string
-  name: string
-  description: string
-  category: "academic" | "arts" | "sports" | "technology" | "service" | "hobby"
-  member_count: number
-  meeting_time: string | null
-  location: string | null
-  image_url: string | null
-  is_joined?: boolean
-  is_sponsor?: boolean
-  is_claimed: boolean
-  president_name?: string | null
-  president_avatar?: string | null
-  president_email?: string | null
-  tags: string[]
-  memberRole?: string | null
-}
+// Clubs are one column of "Club Card"s (components/clubCard.tsx), 16px apart,
+// under a search bar with a My Clubs / All Clubs toggle beside it.
 
-const categoryIcons = {
-  academic: BookOpen,
-  arts: Palette,
-  sports: Trophy,
-  technology: Code,
-  service: Heart,
-  hobby: Gamepad2,
-}
-
-const categoryColors = {
-  academic: "bg-primary text-primary-foreground",
-  arts: "bg-purple-600 text-white",
-  sports: "bg-green-600 text-white",
-  technology: "bg-orange-500 text-white",
-  service: "bg-red-600 text-white",
-  hobby: "bg-secondary text-secondary-foreground",
-}
+const TOGGLE_TRIGGER =
+  "h-10 rounded-full px-4 text-sm font-bold tracking-wide text-black data-[state=active]:bg-[var(--button-default)] data-[state=active]:text-white"
 
 export function ClubsContent() {
-  const { user, isTeacher } = useAuth()
-  const router = useRouter()
+  const { user } = useAuth()
   const [clubs, setClubs] = useState<Club[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  // Lives here (not in Tabs) so a reload after joining doesn't jump back to My Clubs
+  const [view, setView] = useState("my-clubs")
   const [loading, setLoading] = useState(true)
 
   // Load clubs from API
@@ -154,242 +101,37 @@ export function ClubsContent() {
   }, [user?.id, loadClubs])
 
   const filteredClubs = useMemo(() => {
+    const term = searchTerm.toLowerCase()
     return clubs
-      .filter((club) => {
-        const matchesSearch =
-          club.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          club.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          club.tags.some((tag) => tag.toLowerCase().includes(searchTerm.toLowerCase()))
-
-        const matchesCategory = selectedCategory === "all" || club.category === selectedCategory
-
-        return matchesSearch && matchesCategory
-      })
+      .filter(
+        (club) =>
+          club.name.toLowerCase().includes(term) ||
+          club.description.toLowerCase().includes(term) ||
+          club.tags.some((tag) => tag.toLowerCase().includes(term))
+      )
       .sort((a, b) => a.name.localeCompare(b.name))
-  }, [clubs, searchTerm, selectedCategory])
+  }, [clubs, searchTerm])
 
   const joinedClubs = useMemo(() => filteredClubs.filter((club) => club.is_joined), [filteredClubs])
-  const unclaimedClubs = useMemo(() => filteredClubs.filter((club) => !club.is_claimed), [filteredClubs])
 
-  const categories = [
-    { value: "all", label: "All Categories" },
-    { value: "academic", label: "Academic" },
-    { value: "arts", label: "Arts" },
-    { value: "sports", label: "Sports" },
-    { value: "technology", label: "Technology" },
-    { value: "service", label: "Service" },
-    { value: "hobby", label: "Hobby" },
-  ]
+  const renderClubList = (list: Club[]) => (
+    <div className="flex flex-col gap-4">
+      {list.map((club, index) => (
+        <ClubCard
+          key={club.id}
+          club={club}
+          index={index}
+          onJoinLeave={handleJoinLeave}
+          onLeaveSponsor={handleLeaveSponsor}
+          onChanged={handleClaimSuccess}
+        />
+      ))}
+    </div>
+  )
 
-  const renderClubCard = (club: Club, showLeadershipBadge: boolean = false, index: number = 0) => {
-    const CategoryIcon = categoryIcons[club.category]
-    const isLeader = club.memberRole && ['president', 'vice_president', 'officer'].includes(club.memberRole)
-
-    const handleCardClick = (e: React.MouseEvent) => {
-      // Only navigate if not clicking on a button or interactive element
-      const target = e.target as HTMLElement
-      if (target.closest('button') || target.closest('a[href]')) {
-        return
-      }
-      router.push(`/clubs/${club.id}`)
-    }
-
-    return (
-      <Card
-        key={club.id}
-        className="overflow-hidden cursor-pointer group transition-all animate-pop-in"
-        style={{
-          animationDelay: `${index * 50}ms`,
-          transform: index % 3 === 0 ? 'rotate(-0.5deg)' : index % 3 === 1 ? 'rotate(0.3deg)' : 'rotate(-0.2deg)'
-        }}
-        onClick={handleCardClick}
-        role="article"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            router.push(`/clubs/${club.id}`)
-          }
-        }}
-      >
-        <div className="aspect-video relative overflow-hidden">
-          <img
-            src={club.image_url || "/placeholder.svg"}
-            alt={club.name}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          />
-          <div className="absolute top-2 sm:top-3 left-2 sm:left-3">
-            <Badge className={`${categoryColors[club.category]} text-xs`}>
-              <CategoryIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
-              <span className="hidden xs:inline capitalize">{club.category}</span>
-            </Badge>
-          </div>
-          {!club.is_claimed && (
-            <div className="absolute top-2 sm:top-3 right-2 sm:right-3">
-              <Badge variant="secondary" className="text-xs transform rotate-2">
-                Unclaimed
-              </Badge>
-            </div>
-          )}
-          {showLeadershipBadge && isLeader && (
-            <div className="absolute top-2 sm:top-3 right-2 sm:right-3">
-              <Badge className="bg-primary text-primary-foreground text-xs">
-                <Crown className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
-                {club.memberRole === 'president' ? 'President' : club.memberRole === 'vice_president' ? 'VP' : 'Officer'}
-              </Badge>
-            </div>
-          )}
-        </div>
-
-        <CardHeader className="pb-2 sm:pb-3">
-          <div className="flex items-start justify-between">
-            <div className="space-y-1 min-w-0 flex-1">
-              <Link href={`/clubs/${club.id}`}>
-                <CardTitle className="text-base sm:text-lg hover:text-secondary transition-colors cursor-pointer truncate">
-                  {club.name}
-                </CardTitle>
-              </Link>
-              <div className="flex items-center gap-2 sm:gap-4 text-xs sm:text-sm text-muted-foreground font-medium">
-                <div className="flex items-center gap-1">
-                  <Users className="h-3 w-3 sm:h-4 sm:w-4" />
-                  <span className="font-bold">{club.member_count || 0}</span> members
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-3 sm:space-y-4 pt-0">
-          <CardDescription className="line-clamp-3 text-xs sm:text-sm">{club.description}</CardDescription>
-
-          {club.is_claimed && club.meeting_time && (
-            <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                <span className="truncate font-medium">{club.meeting_time}</span>
-              </div>
-              {club.location && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-                  <span className="truncate font-medium">{club.location}</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {club.is_claimed && club.president_name && (
-            <div className="flex items-center gap-2 min-w-0 p-2 rounded-md bg-muted/50">
-              <span className="text-xs sm:text-sm text-muted-foreground flex items-center gap-1 truncate font-medium">
-                <Crown className="h-2.5 w-2.5 sm:h-3 sm:w-3 flex-shrink-0 text-secondary" />
-                <span className="truncate">{club.president_name}</span>
-              </span>
-            </div>
-          )}
-
-          {club.tags && club.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {club.tags.slice(0, 3).map((tag) => (
-                <Badge key={tag} variant="outline" className="text-xs">
-                  {tag}
-                </Badge>
-              ))}
-              {club.tags.length > 3 && (
-                <Badge variant="muted" className="text-xs">
-                  +{club.tags.length - 3}
-                </Badge>
-              )}
-            </div>
-          )}
-
-          <div className="flex flex-col gap-2 pt-2 border-t border-border">
-            {/* Sponsor Claim Button — shown for verified teachers who haven't
-                already sponsored this specific club. Multiple teachers can
-                sponsor the same club; is_sponsor is per-user from /api/clubs. */}
-            {user?.id && isTeacher && !club.is_sponsor && (
-              <ClaimSponsorDialog
-                clubId={club.id}
-                clubName={club.name}
-                userId={user.id}
-                userName={user.name || "User"}
-                userEmail={user.email}
-                isVerifiedTeacher={isTeacher}
-                isAlreadySponsor={!!club.is_sponsor}
-                onClaimSuccess={handleClaimSuccess}
-              />
-            )}
-
-            {/* Leave Sponsorship button for active sponsors */}
-            {user?.id && isTeacher && club.is_sponsor && (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  handleLeaveSponsor(club.id)
-                }}
-              >
-                Leave Sponsorship
-              </Button>
-            )}
-
-            {!club.is_claimed ? (
-              user?.id ? (
-                <ClaimClubDialog
-                  clubId={club.id}
-                  clubName={club.name}
-                  userId={user.id}
-                  userName={user.name || "User"}
-                  userEmail={user.email}
-                  userRole={user.role}
-                  userGrade={user.grade}
-                  userDepartment={user.department}
-                  userBio={user.bio}
-                  userAvatar={user.profilePicture}
-                  onClaimSuccess={handleClaimSuccess}
-                />
-              ) : (
-                <Button disabled className="w-full" variant="default">
-                  <Crown className="h-4 w-4 mr-2" />
-                  Login to Claim
-                </Button>
-              )
-            ) : (
-              <>
-                {user?.id && (club.is_joined || club.is_sponsor) && (
-                  <div className="flex gap-2">
-                    {permissionsForRoles(
-                      rolesFor({ memberRole: club.memberRole, isSponsor: club.is_sponsor })
-                    ).includes("post") && (
-                      <CreatePostDialog
-                        clubId={club.id}
-                        clubName={club.name}
-                        userId={user.id}
-                        onPostCreated={loadClubs}
-                      />
-                    )}
-                  </div>
-                )}
-                {!club.is_sponsor && (
-                  <Button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleJoinLeave(club.id, club.is_joined || false)
-                    }}
-                    variant={club.is_joined ? "secondary" : "default"}
-                    className={club.is_joined ? "flex-1" : "flex-1"}
-                  >
-                    {club.is_joined ? "Joined" : "Join Club"}
-                  </Button>
-                )}
-              </>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    )
-  }
-
-  if (loading) {
+  // Only block the whole page on the first load; later refreshes (after a
+  // join, claim, etc.) keep the list mounted.
+  if (loading && clubs.length === 0) {
     return (
       <div className="max-w-6xl mx-auto px-4 py-8 flex items-center justify-center min-h-[60vh]">
         <div className="text-center">
@@ -403,77 +145,50 @@ export function ClubsContent() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-3 sm:px-4 py-6 sm:py-10 space-y-6 sm:space-y-8">
-      {/* Header */}
-      <div className="text-center space-y-3">
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary text-primary-foreground transform rotate-1">
-          <Grid3X3 className="h-5 w-5" />
-          <span className="font-bold tracking-wide text-sm">Browse & Join</span>
+    <div className="max-w-[700px] mx-auto px-3 sm:px-4 pt-6 max-md:pb-24 md:py-10">
+      <Tabs value={view} onValueChange={setView} className="w-full">
+        {/* On phones the search bar and toggle dock just above the bottom tab bar (3.5rem tall) */}
+        <div className="flex items-center gap-3 max-md:fixed max-md:inset-x-0 max-md:bottom-[calc(3.5rem+env(safe-area-inset-bottom))] max-md:z-40 max-md:border-t max-md:border-border max-md:bg-background max-md:px-3 max-md:py-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search clubs..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 text-base"
+            />
+          </div>
+          <TabsList className="h-12 shrink-0 rounded-full bg-[var(--button-outline)] p-1">
+            <TabsTrigger value="my-clubs" className={TOGGLE_TRIGGER}>
+              My Clubs
+            </TabsTrigger>
+            <TabsTrigger value="all" className={TOGGLE_TRIGGER}>
+              All Clubs
+            </TabsTrigger>
+          </TabsList>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-black text-foreground tracking-tight">
-          School Clubs
-        </h1>
-        <p className="text-sm sm:text-base text-muted-foreground font-medium max-w-2xl mx-auto">
-          Discover and join clubs, or claim an unclaimed club to become its president.
-        </p>
-        <div className="w-24 h-1 bg-secondary mx-auto" />
-      </div>
 
-      <Tabs defaultValue="all" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 h-auto bg-muted p-1">
-          <TabsTrigger
-            value="all"
-            className="text-xs sm:text-sm py-2 font-bold tracking-wide data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-          >
-            All Clubs
-          </TabsTrigger>
-          <TabsTrigger
-            value="my-clubs"
-            className="text-xs sm:text-sm py-2 font-bold tracking-wide data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-          >
-            My Clubs
-          </TabsTrigger>
-          <TabsTrigger
-            value="unclaimed"
-            className="text-xs sm:text-sm py-2 font-bold tracking-wide data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
-          >
-            Unclaimed
-          </TabsTrigger>
-        </TabsList>
+        <TabsContent value="my-clubs" className="mt-6">
+          {renderClubList(joinedClubs)}
+          {joinedClubs.length === 0 && (
+            <Card className="transition-all">
+              <CardContent className="py-12 sm:py-16 text-center">
+                <div className="inline-block p-4 rounded-full bg-muted mb-4">
+                  <Users className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground" />
+                </div>
+                <p className="text-lg sm:text-xl text-foreground font-bold">
+                  {searchTerm ? "No clubs found" : "No clubs joined yet"}
+                </p>
+                <p className="text-sm text-muted-foreground mt-2 font-medium">
+                  {searchTerm ? "Try adjusting your search" : "Browse all clubs and join one!"}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
 
-        <TabsContent value="all" className="space-y-4 sm:space-y-6 mt-6">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search clubs..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 text-base"
-              />
-            </div>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-              <SelectTrigger className="w-full sm:w-48 font-bold">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {categories.map((category) => (
-                  <SelectItem key={category.value} value={category.value} className="font-medium">
-                    {category.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="inline-block px-3 py-1 rounded-full bg-muted text-xs sm:text-sm text-muted-foreground font-bold">
-            Showing {filteredClubs.length} clubs
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {filteredClubs.map((club, index) => renderClubCard(club, false, index))}
-          </div>
-
+        <TabsContent value="all" className="mt-6">
+          {renderClubList(filteredClubs)}
           {filteredClubs.length === 0 && (
             <Card className="transition-all">
               <CardContent className="py-12 sm:py-16 text-center">
@@ -482,51 +197,7 @@ export function ClubsContent() {
                 </div>
                 <p className="text-lg sm:text-xl text-foreground font-bold">No clubs found</p>
                 <p className="text-sm text-muted-foreground mt-2 font-medium">
-                  Try adjusting your search or filters
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="my-clubs" className="space-y-4 sm:space-y-6 mt-6">
-          <div className="inline-block px-3 py-1 rounded-full bg-muted text-xs sm:text-sm text-muted-foreground font-bold">
-            {joinedClubs.length} joined clubs
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {joinedClubs.map((club, index) => renderClubCard(club, true, index))}
-          </div>
-          {joinedClubs.length === 0 && (
-            <Card className="transition-all">
-              <CardContent className="py-12 sm:py-16 text-center">
-                <div className="inline-block p-4 rounded-full bg-muted mb-4">
-                  <Users className="h-10 w-10 sm:h-12 sm:w-12 text-muted-foreground" />
-                </div>
-                <p className="text-lg sm:text-xl text-foreground font-bold">No clubs joined yet</p>
-                <p className="text-sm text-muted-foreground mt-2 font-medium">
-                  Browse all clubs and join one!
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </TabsContent>
-
-        <TabsContent value="unclaimed" className="space-y-4 sm:space-y-6 mt-6">
-          <div className="inline-block px-3 py-1 rounded-full bg-secondary text-xs sm:text-sm text-secondary-foreground font-bold transform -rotate-1">
-            {unclaimedClubs.length} unclaimed clubs available
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-            {unclaimedClubs.map((club, index) => renderClubCard(club, false, index))}
-          </div>
-          {unclaimedClubs.length === 0 && (
-            <Card className="transition-all">
-              <CardContent className="py-12 sm:py-16 text-center">
-                <div className="inline-block p-4 rounded-full bg-secondary mb-4">
-                  <Crown className="h-10 w-10 sm:h-12 sm:w-12 text-secondary-foreground" />
-                </div>
-                <p className="text-lg sm:text-xl text-foreground font-bold">All clubs claimed!</p>
-                <p className="text-sm text-muted-foreground mt-2 font-medium">
-                  Every club has a president now
+                  Try adjusting your search
                 </p>
               </CardContent>
             </Card>

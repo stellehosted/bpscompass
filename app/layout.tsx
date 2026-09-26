@@ -1,7 +1,5 @@
 import type { Metadata, Viewport } from 'next'
 import localFont from 'next/font/local'
-import { GeistSans } from 'geist/font/sans'
-import { GeistMono } from 'geist/font/mono'
 import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
 import { AuthProvider } from '@/contexts/auth-context'
@@ -54,8 +52,7 @@ const avenir = localFont({
   display: 'swap',
 })
 
-// ✅ Combine your fonts once outside the component (server-safe)
-const fontVars = `${GeistSans.variable} ${GeistMono.variable} ${avenir.variable}`
+const fontVars = `${avenir.variable}`
 
 export default function RootLayout({
   children,

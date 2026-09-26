@@ -25,6 +25,8 @@ interface ClaimClubDialogProps {
   userBio?: string
   userAvatar?: string
   onClaimSuccess: () => void
+  // Replaces the default "Claim Club" button, e.g. the club card's primary button.
+  trigger?: React.ReactNode
 }
 
 export function ClaimClubDialog({ 
@@ -38,6 +40,7 @@ export function ClaimClubDialog({
   userDepartment, 
   userBio, 
   userAvatar, 
+  trigger,
   onClaimSuccess 
 }: ClaimClubDialogProps) {
   const [isOpen, setIsOpen] = useState(false)
@@ -90,10 +93,12 @@ export function ClaimClubDialog({
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>
-        <Button className="w-full" variant="default">
-          <Crown className="h-4 w-4 mr-2" />
-          Claim Club
-        </Button>
+        {trigger ?? (
+          <Button className="w-full" variant="default">
+            <Crown className="h-4 w-4 mr-2" />
+            Claim Club
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="max-w-md w-[calc(100vw-2rem)] sm:w-full max-h-[90vh] overflow-y-auto">
         <DialogHeader>

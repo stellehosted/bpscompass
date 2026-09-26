@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { isCoordinator } from '@/lib/auth/roles'
+import { permissionsForRoles, rolesFor } from '@/lib/auth/permissions'
 
 // GET /api/clubs - Get all clubs with optional filtering
 export async function GET(request: NextRequest) {
@@ -69,6 +71,8 @@ export async function GET(request: NextRequest) {
         sponsorships.rows.map((s: any) => s.club_id)
       )
 
+      const userIsCoordinator = await isCoordinator(userId)
+
       const clubs = result.rows.map((club: any) => {
         const isSponsor = sponsorshipSet.has(club.id)
         const isMember = membershipMap.has(club.id)
@@ -78,6 +82,10 @@ export async function GET(request: NextRequest) {
           is_joined: isMember || isSponsor, // Sponsors are considered "joined"
           is_sponsor: isSponsor,
           memberRole: isSponsor ? 'sponsor' : (membershipMap.get(club.id) || null),
+          // What this viewer may do in this club; the club cards show buttons from this list
+          permissions: permissionsForRoles(
+            rolesFor({ memberRole: membershipMap.get(club.id), isSponsor, isCoordinator: userIsCoordinator })
+          ),
         }
       })
 
