@@ -2,6 +2,8 @@
 --   * Miku Club: fully populated (sponsor, president, VP, officer, member, posts, tags, a like)
 --   * A coordinator (user_roles) who isn't in any club
 --   * Clubby McClubface: unclaimed, no members/posts, for testing empty states
+--   * The Extraordinarily Long-Winded...: absurdly long name/time/location/description and a post with a
+--     max-length title, for testing truncation and shrink-to-fit
 -- The users below are also the demo-mode personas (NEXT_PUBLIC_DEMO_PERSONA, see lib/demo-mode.ts):
 -- demo mode signs in as one of them by email, so this file is the only place they're defined.
 -- Uses fixed UUIDs + ON CONFLICT DO NOTHING, so re-running never overwrites existing rows.
@@ -36,12 +38,25 @@ INSERT INTO clubs (id, name, description, category, meeting_time, location, imag
   ('10000000-0000-0000-0000-000000000002', 'Clubby McClubface', 'Its Clubby McClubface. What more could you want?', 'hobby', 'Never', 'U999', '', false)
 ON CONFLICT DO NOTHING;
 
+-- Extremely long text (name/meeting_time/location are VARCHAR(255), post titles VARCHAR(200))
+INSERT INTO clubs (id, name, description, category, meeting_time, location, image_url, is_claimed, president_id) VALUES
+  ('10000000-0000-0000-0000-000000000003',
+   'The Extraordinarily Long-Winded Society for the Appreciation, Preservation, and Enthusiastic Discussion of Absurdly Lengthy Club Names',
+   'This club exists purely to find out what happens when a description goes on and on and on, well past the point where any reasonable card layout could show all of it, so that we can check it is cut off with an ellipsis instead of stretching or breaking the page. It has no end in sight.',
+   'hobby',
+   'Every second Tuesday, Thursday, and occasional Friday of the month, before school, during lunch, and sometimes after school until the custodians ask us to leave',
+   'The third floor annex behind the old science wing, past the vending machines, next to the stairwell that only sort of connects to the library',
+   '', true, '00000000-0000-0000-0000-000000000002')
+ON CONFLICT DO NOTHING;
+
 -- Members (getUserRoles() reads the president from club_members, not clubs.president_id)
 INSERT INTO club_members (club_id, user_id, role) VALUES
   ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'president'),
   ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000003', 'vice_president'),
   ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000004', 'officer'),
-  ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000005', 'member')
+  ('10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000005', 'member'),
+  ('10000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002', 'president'),
+  ('10000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000005', 'member')
 ON CONFLICT (club_id, user_id) DO NOTHING;
 
 -- Sponsor (this is what makes isSponsor true)
@@ -52,7 +67,11 @@ ON CONFLICT (club_id, user_id) DO NOTHING;
 -- Posts (title is nullable)
 INSERT INTO posts (id, club_id, user_id, title, content, created_at) VALUES
   ('20000000-0000-0000-0000-000000000001', '10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', 'World is Mine', 'Sekaide ichiban ohime sama!', now() - interval '3 days'),
-  ('20000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', NULL, 'Untitled Post Test', now() - interval '1 day')
+  ('20000000-0000-0000-0000-000000000002', '10000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000002', NULL, 'Untitled Post Test', now() - interval '1 day'),
+  ('20000000-0000-0000-0000-000000000003', '10000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000002',
+   'An Announcement With a Truly Remarkable Title That Keeps Going Long After Anyone Reasonably Expected It To Stop, Just To See What The Post Card Does With It',
+   'Welcome to the very first meeting of the club with the longest name in school. Agenda: 1) argue about whether the name fits on one line, 2) discover it does not, 3) admire Supercalifragilisticexpialidocious_Supercalifragilisticexpialidocious_Supercalifragilisticexpialidocious as an unbreakable word, 4) snacks. Please bring a pen, a friend, and an unreasonable amount of enthusiasm. Also see https://example.com/a/very/long/link/that/goes/on/and/on/and/on/and/on/and/on/and/on/and/on/forever for the full minutes of every meeting we have never had.',
+   now() - interval '2 hours')
 ON CONFLICT (id) DO NOTHING;
 
 -- A like

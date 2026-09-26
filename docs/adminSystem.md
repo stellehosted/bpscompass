@@ -50,22 +50,15 @@ The first seven rows are defined in code, in `lib/auth/permissions.ts`. Edit the
 
 Legend: ✓ allowed, - not allowed. **Enforced** says where the rule is checked: *server* (the API rejects it), *UI only* (the button is hidden but the API has no check), or *not built*.
 
-| Action | Member | Officer | Vice President | President | Sponsor | Coordinator | Enforced |
-|--------|--------|---------|----------------|-----------|---------|-------------|----------|
-| Create post | - | ✓ | ✓ | ✓ | ✓ | - | server |
-| Delete any post in the club | - | - | Own club | Own club | Own club | Any club | server |
-| Edit club info | - | - | ✓ | ✓ | ✓ | ✓ | server |
-| Manage tags | - | - | ✓ | ✓ | ✓ | ✓ | server |
-| Manage members (promote, demote, add officers/VPs) | - | - | - | ✓ | ✓ | ✓ | server |
-| Email all members | - | ✓ | ✓ | ✓ | ✓ | ✓ | UI only (mailto link) |
-| Join club | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | server |
-| Leave club | ✓ | ✓ | ✓ | Use Leave Presidency instead | Leave sponsorship instead | ✓ | server (blocks every president) |
-| Transfer or leave presidency (pick a successor by name) | - | - | - | ✓ (any president) | - | - | server |
-| Request a leadership change (needs sponsor approval) | - | - | - | ✓ | - | - | server (the Manage Members dialog currently skips this) |
-| Approve or reject leadership requests | - | - | - | - | Own club | Any club | server |
-| Claim or leave sponsorship | - | - | - | - | ✓ (verified teachers only) | - | server |
-| Kick members, remove presidents (admin dashboard) | - | - | - | - | - | ✓ | server |
-| Create clubs (admin dashboard) | - | - | - | - | - | ✓ | UI only |
+| Action | Member | Officer | Vice President | Presidents | Teachers | Coordinator |
+|--------|--------|---------|----------------|-----------|---------|-------------|
+| Create Posts | - | ✓ | ✓ | ✓ | ✓ | - |
+| Delete Posts | - | - | Own club | Own club | Own club | Any club |
+| Email All | - | ✓ | ✓ | ✓ | ✓ | ✓ | 
+| Edit Club | - | - | ✓ | ✓ | ✓ | ✓ | 
+| Manage Members | - | - | - | ✓ | ✓ | ✓ | 
+| Claim/Leave Sponsorship | - | - | - | - | ✓ | - |
+| Create Clubs | - | - | - | - | - | ✓ |
 
 Notes:
 - Everyone can delete their own posts, whatever their role.
