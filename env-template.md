@@ -1,3 +1,9 @@
+# Azure AD Authentication
+## NEXT_PUBLIC_AZURE_CLIENT_ID: Application (client) ID
+## NEXT_PUBLIC_AZURE_TENANT_ID: Directory (tenant) ID
+NEXT_PUBLIC_AZURE_CLIENT_ID=your-azure-client-id
+NEXT_PUBLIC_AZURE_TENANT_ID=your-azure-tenant-id
+
 # Database Configuration
 DATABASE_URL="postgresql://postgres:password@localhost:5432/school_social_app"
 
@@ -21,14 +27,9 @@ RATE_LIMIT_WINDOW=900000
 NEXT_PUBLIC_VAPID_PUBLIC_KEY="your-vapid-public-key"
 VAPID_PRIVATE_KEY="your-vapid-private-key"
 
-# Extra verified teachers (comma-separated), on top of lib/teacher-emails.json.
-# For local testing: lets the demo sponsor claim clubs as a sponsor.
+# Demo Mode
+# coordinator | sponsor | president | vp | officer | member
+# or any seeded user's email
+NEXT_PUBLIC_DEMO_PERSONA=coordinator
+NEXT_PUBLIC_DEMO_MODE=true
 TEACHER_EMAILS=test.sponsor@berkeleyprep.org
-
-# Azure AD (Entra ID) app registration for staff/student login.
-# NEXT_PUBLIC_AZURE_CLIENT_ID: Application (client) ID from the Azure Portal.
-# NEXT_PUBLIC_AZURE_TENANT_ID: Directory (tenant) ID from the Azure Portal.
-#   Required for single-tenant app registrations (the default for apps created
-#   after 10/15/2018) — these reject the shared "/common" login endpoint.
-NEXT_PUBLIC_AZURE_CLIENT_ID=your-azure-client-id
-NEXT_PUBLIC_AZURE_TENANT_ID=your-azure-tenant-id
