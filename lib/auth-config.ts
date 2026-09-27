@@ -10,7 +10,9 @@ const isSecureContext = typeof window !== "undefined" &&
 export const msalConfig: Configuration = {
   auth: {
     clientId: process.env.NEXT_PUBLIC_AZURE_CLIENT_ID || "", // You'll need to get this from Azure Portal
-    authority: "https://login.microsoftonline.com/common", // Use "common" for multi-tenant
+    // Single-tenant app registrations (the default since 10/15/2018) can't use "/common".
+    // Use the tenant ID (or "organizations" for any work/school account) instead.
+    authority: `https://login.microsoftonline.com/${process.env.NEXT_PUBLIC_AZURE_TENANT_ID || "common"}`,
     redirectUri: typeof window !== "undefined" ? window.location.origin : "",
   },
   cache: {
