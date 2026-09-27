@@ -13,7 +13,6 @@ import {
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Settings, Upload, X } from "lucide-react"
 import { ImageCropDialog } from "./dialogImageCrop"
 import { useAuth } from "@/contexts/auth-context"
@@ -22,7 +21,6 @@ interface EditClubDialogProps {
   clubId: string
   clubName: string
   currentDescription: string
-  currentCategory: string
   currentMeetingTime: string | null
   currentLocation: string | null
   currentImageUrl: string | null
@@ -37,7 +35,6 @@ export const EditClubDialog = memo(function EditClubDialog({
   clubId,
   clubName,
   currentDescription,
-  currentCategory,
   currentMeetingTime,
   currentLocation,
   currentImageUrl,
@@ -48,7 +45,6 @@ export const EditClubDialog = memo(function EditClubDialog({
   const { user } = useAuth()
   const [open, setOpen] = useState(false)
   const [description, setDescription] = useState("")
-  const [category, setCategory] = useState("")
   const [meetingTime, setMeetingTime] = useState("")
   const [location, setLocation] = useState("")
   const [imageUrl, setImageUrl] = useState("")
@@ -62,14 +58,13 @@ export const EditClubDialog = memo(function EditClubDialog({
   useEffect(() => {
     if (open) {
       setDescription(currentDescription)
-      setCategory(currentCategory)
       setMeetingTime(currentMeetingTime || "")
       setLocation(currentLocation || "")
       setImageUrl(currentImageUrl || "")
       setImagePreview(currentImageUrl)
       setSelectedImage(null)
     }
-  }, [open, currentDescription, currentCategory, currentMeetingTime, currentLocation, currentImageUrl])
+  }, [open, currentDescription, currentMeetingTime, currentLocation, currentImageUrl])
 
   const handleImageSelect = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
@@ -163,7 +158,6 @@ export const EditClubDialog = memo(function EditClubDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           description,
-          category,
           meetingTime: meetingTime || null,
           location: location || null,
           imageUrl: finalImageUrl || null,
@@ -184,7 +178,7 @@ export const EditClubDialog = memo(function EditClubDialog({
     } finally {
       setLoading(false)
     }
-  }, [clubId, description, category, meetingTime, location, imageUrl, selectedImage, onUpdateSuccess, user?.id])
+  }, [clubId, description, meetingTime, location, imageUrl, selectedImage, onUpdateSuccess, user?.id])
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -215,24 +209,6 @@ export const EditClubDialog = memo(function EditClubDialog({
               onChange={(e) => setDescription(e.target.value)}
               className="min-h-[100px] sm:min-h-[120px] text-sm"
             />
-          </div>
-
-          {/* Category */}
-          <div className="space-y-1.5 sm:space-y-2">
-            <Label htmlFor="category" className="text-sm">Category *</Label>
-            <Select value={category} onValueChange={setCategory}>
-              <SelectTrigger className="h-9 sm:h-10 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="academic">Academic</SelectItem>
-                <SelectItem value="arts">Arts</SelectItem>
-                <SelectItem value="sports">Sports</SelectItem>
-                <SelectItem value="technology">Technology</SelectItem>
-                <SelectItem value="service">Service</SelectItem>
-                <SelectItem value="hobby">Hobby</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           {/* Meeting Time */}

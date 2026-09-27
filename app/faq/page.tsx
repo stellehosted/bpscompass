@@ -102,7 +102,7 @@ export default function FaqPage() {
         <FaqItem
           icon={<Search className="h-5 w-5" />}
           question="I can't find my club on this app. How do I add it?"
-          answer="Only administrators can create new clubs on BPS Compass. Please email sunste@berkeleyprep.org with your club's name, a short description, its category (Academic, Arts, Sports, Technology, Service, or Hobby), and meeting details. An admin will add it for you."
+          answer="Only administrators can create new clubs on BPS Compass. Please email sunste@berkeleyprep.org with your club's name, a short description, and meeting details. An admin will add it for you."
         />
 
         <FaqItem

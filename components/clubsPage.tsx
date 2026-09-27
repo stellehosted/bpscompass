@@ -14,12 +14,17 @@ import { ClubCard, type Club } from "./clubCard"
 const TOGGLE_TRIGGER =
   "h-10 rounded-full px-4 text-sm font-bold tracking-wide text-black data-[state=active]:bg-[var(--button-default)] data-[state=active]:text-white"
 
-export function ClubsContent() {
+// `embedded` is for pages that already provide their own spacing and have no
+// bottom tab bar (the admin dashboard): no outer padding, no My Clubs / All Clubs
+// toggle (it just lists every club), and on phones the search bar stays at the
+// top instead of docking above the tab bar.
+// `showEdit` adds an Edit button to each card for people allowed to edit the club.
+export function ClubsContent({ embedded = false, showEdit = false }: { embedded?: boolean; showEdit?: boolean }) {
   const { user } = useAuth()
   const [clubs, setClubs] = useState<Club[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   // Lives here (not in Tabs) so a reload after joining doesn't jump back to My Clubs
-  const [view, setView] = useState("my-clubs")
+  const [view, setView] = useState(embedded ? "all" : "my-clubs")
   const [loading, setLoading] = useState(true)
 
   // Load clubs from API
@@ -124,6 +129,7 @@ export function ClubsContent() {
           onJoinLeave={handleJoinLeave}
           onLeaveSponsor={handleLeaveSponsor}
           onChanged={handleClaimSuccess}
+          showEdit={showEdit}
         />
       ))}
     </div>
@@ -145,10 +151,16 @@ export function ClubsContent() {
   }
 
   return (
-    <div className="max-w-[700px] mx-auto px-3 sm:px-4 pt-6 max-md:pb-24 md:py-10">
+    <div className={embedded ? "max-w-[700px] mx-auto" : "max-w-[700px] mx-auto px-3 sm:px-4 pt-6 max-md:pb-24 md:py-10"}>
       <Tabs value={view} onValueChange={setView} className="w-full">
         {/* On phones the search bar and toggle dock just above the bottom tab bar (3.5rem tall) */}
-        <div className="flex items-center gap-3 max-md:fixed max-md:inset-x-0 max-md:bottom-[calc(3.5rem+env(safe-area-inset-bottom))] max-md:z-40 max-md:border-t max-md:border-border max-md:bg-background max-md:px-3 max-md:py-2">
+        <div
+          className={
+            embedded
+              ? "flex items-center gap-3"
+              : "flex items-center gap-3 max-md:fixed max-md:inset-x-0 max-md:bottom-[calc(3.5rem+env(safe-area-inset-bottom))] max-md:z-40 max-md:border-t max-md:border-border max-md:bg-background max-md:px-3 max-md:py-2"
+          }
+        >
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -158,14 +170,16 @@ export function ClubsContent() {
               className="pl-10 text-base"
             />
           </div>
-          <TabsList className="h-12 shrink-0 rounded-full bg-[var(--button-outline)] p-1">
-            <TabsTrigger value="my-clubs" className={TOGGLE_TRIGGER}>
-              My Clubs
-            </TabsTrigger>
-            <TabsTrigger value="all" className={TOGGLE_TRIGGER}>
-              All Clubs
-            </TabsTrigger>
-          </TabsList>
+          {!embedded && (
+            <TabsList className="h-12 shrink-0 rounded-full bg-[var(--button-outline)] p-1">
+              <TabsTrigger value="my-clubs" className={TOGGLE_TRIGGER}>
+                My Clubs
+              </TabsTrigger>
+              <TabsTrigger value="all" className={TOGGLE_TRIGGER}>
+                All Clubs
+              </TabsTrigger>
+            </TabsList>
+          )}
         </div>
 
         <TabsContent value="my-clubs" className="mt-6">

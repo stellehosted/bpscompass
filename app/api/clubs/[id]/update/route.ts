@@ -10,24 +10,15 @@ export async function PUT(
   try {
     const { id: clubId } = await params
     const body = await request.json()
-    const { description, category, meetingTime, location, imageUrl, userId } = body
+    const { description, meetingTime, location, imageUrl, userId } = body
 
     const denied = await requireClubPermission(userId, clubId, 'editClub')
     if (denied) return denied
 
     // Validate required fields
-    if (!description || !category) {
+    if (!description) {
       return NextResponse.json(
-        { success: false, error: 'Description and category are required' },
-        { status: 400 }
-      )
-    }
-
-    // Validate category
-    const validCategories = ['academic', 'arts', 'sports', 'technology', 'service', 'hobby']
-    if (!validCategories.includes(category)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid category' },
+        { success: false, error: 'Description is required' },
         { status: 400 }
       )
     }
@@ -46,18 +37,16 @@ export async function PUT(
       UPDATE clubs 
       SET 
         description = $1,
-        category = $2,
-        meeting_time = $3,
-        location = $4,
-        image_url = $5,
+        meeting_time = $2,
+        location = $3,
+        image_url = $4,
         updated_at = CURRENT_TIMESTAMP
-      WHERE id = $6
+      WHERE id = $5
       RETURNING *
     `
 
     const result = await pool.query(updateQuery, [
       description,
-      category,
       meetingTime,
       location,
       imageUrl,

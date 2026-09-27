@@ -29,21 +29,20 @@ WHERE NOT EXISTS (
 );
 
 -- Miku Club (Filled)
-INSERT INTO clubs (id, name, description, category, meeting_time, location, image_url, is_claimed, president_id) VALUES
-  ('10000000-0000-0000-0000-000000000001', 'Miku Club', 'The world is hers', 'hobby', 'Always', 'U000', '/uploads/mikuClub.jpg', true, '00000000-0000-0000-0000-000000000002')
+INSERT INTO clubs (id, name, description, meeting_time, location, image_url, is_claimed, president_id) VALUES
+  ('10000000-0000-0000-0000-000000000001', 'Miku Club', 'The world is hers', 'Always', 'U000', '/uploads/mikuClub.jpg', true, '00000000-0000-0000-0000-000000000002')
 ON CONFLICT (id) DO NOTHING;
 
 -- Clubby McClubface (Empty)
-INSERT INTO clubs (id, name, description, category, meeting_time, location, image_url, is_claimed) VALUES
-  ('10000000-0000-0000-0000-000000000002', 'Clubby McClubface', 'Its Clubby McClubface. What more could you want?', 'hobby', 'Never', 'U999', '', false)
+INSERT INTO clubs (id, name, description, meeting_time, location, image_url, is_claimed) VALUES
+  ('10000000-0000-0000-0000-000000000002', 'Clubby McClubface', 'Its Clubby McClubface. What more could you want?', 'Never', 'U999', '', false)
 ON CONFLICT DO NOTHING;
 
 -- Extremely long text (name/meeting_time/location are VARCHAR(255), post titles VARCHAR(200))
-INSERT INTO clubs (id, name, description, category, meeting_time, location, image_url, is_claimed, president_id) VALUES
+INSERT INTO clubs (id, name, description, meeting_time, location, image_url, is_claimed, president_id) VALUES
   ('10000000-0000-0000-0000-000000000003',
    'The Extraordinarily Long-Winded Society for the Appreciation, Preservation, and Enthusiastic Discussion of Absurdly Lengthy Club Names',
    'This club exists purely to find out what happens when a description goes on and on and on, well past the point where any reasonable card layout could show all of it, so that we can check it is cut off with an ellipsis instead of stretching or breaking the page. It has no end in sight.',
-   'hobby',
    'Every second Tuesday, Thursday, and occasional Friday of the month, before school, during lunch, and sometimes after school until the custodians ask us to leave',
    'The third floor annex behind the old science wing, past the vending machines, next to the stairwell that only sort of connects to the library',
    '', true, '00000000-0000-0000-0000-000000000002')

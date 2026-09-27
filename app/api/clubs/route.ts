@@ -7,7 +7,6 @@ import { permissionsForRoles, rolesFor } from '@/lib/auth/permissions'
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const category = searchParams.get('category')
     const isClaimed = searchParams.get('isClaimed')
     const userId = searchParams.get('userId') // For filtering user's clubs
 
@@ -30,12 +29,6 @@ export async function GET(request: NextRequest) {
     const conditions: string[] = []
     const params: any[] = []
     let paramCount = 1
-
-    if (category && category !== 'all') {
-      conditions.push(`c.category = $${paramCount}`)
-      params.push(category)
-      paramCount++
-    }
 
     if (isClaimed !== null) {
       conditions.push(`c.is_claimed = $${paramCount}`)
@@ -116,18 +109,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
 
     // Validate required fields
-    if (!body.name || !body.description || !body.category) {
+    if (!body.name || !body.description) {
       return NextResponse.json(
-        { success: false, error: 'Missing required fields: name, description, category' },
-        { status: 400 }
-      )
-    }
-
-    // Validate category
-    const validCategories = ['academic', 'arts', 'sports', 'technology', 'service', 'hobby']
-    if (!validCategories.includes(body.category)) {
-      return NextResponse.json(
-        { success: false, error: 'Invalid category' },
+        { success: false, error: 'Missing required fields: name, description' },
         { status: 400 }
       )
     }
@@ -144,14 +128,13 @@ export async function POST(request: NextRequest) {
 
     // Create club
     const insertQuery = `
-      INSERT INTO clubs (name, description, category, image_url, meeting_time, location, is_claimed)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO clubs (name, description, image_url, meeting_time, location, is_claimed)
+      VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
     `
     const result = await pool.query(insertQuery, [
       body.name,
       body.description,
-      body.category,
       body.imageUrl || null,
       body.meetingTime || null,
       body.location || null,

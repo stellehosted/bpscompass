@@ -39,7 +39,6 @@ CREATE TABLE IF NOT EXISTS clubs (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL UNIQUE,
     description TEXT NOT NULL,
-    category VARCHAR(50) NOT NULL CHECK (category IN ('academic', 'arts', 'sports', 'technology', 'service', 'hobby')),
     image_url VARCHAR(500),
     meeting_time VARCHAR(255),
     location VARCHAR(255),
@@ -49,7 +48,6 @@ CREATE TABLE IF NOT EXISTS clubs (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX IF NOT EXISTS idx_clubs_category ON clubs(category);
 CREATE INDEX IF NOT EXISTS idx_clubs_is_claimed ON clubs(is_claimed);
 CREATE INDEX IF NOT EXISTS idx_clubs_president_id ON clubs(president_id);
 

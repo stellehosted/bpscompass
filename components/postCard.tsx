@@ -97,7 +97,7 @@ export function PostCard({
       </div>
 
       <div className="px-7 py-6 space-y-4">
-        <p className="text-sm text-card-foreground leading-relaxed whitespace-pre-wrap">
+        <p className="text-sm text-card-foreground leading-relaxed whitespace-pre-wrap break-words">
           {renderTextWithLinks(post.content)}
         </p>
 

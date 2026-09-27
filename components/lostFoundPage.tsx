@@ -34,7 +34,6 @@ interface LostFoundItem {
   status: "active" | "claimed" | "expired"
   reporter: {
     name: string
-    avatar: string
   }
 }
 
@@ -51,11 +50,9 @@ const mockItems: LostFoundItem[] = [
     contactName: "Sarah Johnson",
     contactEmail: "sarah.j@school.edu",
     contactPhone: "(555) 123-4567",
-    image: "/placeholder.svg?key=iphone",
     status: "active",
     reporter: {
       name: "Sarah Johnson",
-      avatar: "/placeholder.svg?key=sarah2",
     },
   },
   {
@@ -68,11 +65,9 @@ const mockItems: LostFoundItem[] = [
     dateReported: "1 day ago",
     contactName: "Mike Chen",
     contactEmail: "mike.c@school.edu",
-    image: "/placeholder.svg?key=backpack",
     status: "active",
     reporter: {
       name: "Mike Chen",
-      avatar: "/placeholder.svg?key=mike",
     },
   },
   {
@@ -86,11 +81,9 @@ const mockItems: LostFoundItem[] = [
     dateReported: "3 days ago",
     contactName: "Emma Wilson",
     contactEmail: "emma.w@school.edu",
-    image: "/placeholder.svg?key=textbook",
     status: "active",
     reporter: {
       name: "Emma Wilson",
-      avatar: "/placeholder.svg?key=emma2",
     },
   },
   {
@@ -107,7 +100,6 @@ const mockItems: LostFoundItem[] = [
     status: "active",
     reporter: {
       name: "Alex Rodriguez",
-      avatar: "/placeholder.svg?key=alex2",
     },
   },
   {
@@ -121,11 +113,9 @@ const mockItems: LostFoundItem[] = [
     dateReported: "1 week ago",
     contactName: "Jordan Smith",
     contactEmail: "jordan.s@school.edu",
-    image: "/placeholder.svg?key=hoodie",
     status: "claimed",
     reporter: {
       name: "Jordan Smith",
-      avatar: "/placeholder.svg?key=jordan2",
     },
   },
 ]
@@ -561,7 +551,7 @@ export function LostFoundContent() {
                   {item.image && (
                     <div className="aspect-video relative overflow-hidden">
                       <img
-                        src={item.image.startsWith('data:') ? item.image : item.image || "/placeholder.svg"}
+                        src={item.image}
                         alt={item.title}
                         className="w-full h-full object-cover"
                       />

@@ -225,11 +225,7 @@ export function SponsorDashboard({ userId }: { userId: string }) {
                   <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
-                        <img
-                          src={club.image_url || "/placeholder.svg"}
-                          alt={club.name}
-                          className="h-16 w-16 rounded-lg object-cover flex-shrink-0"
-                        />
+                        {club.image_url && <img src={club.image_url} alt={club.name} className="h-16 w-16 rounded-lg object-cover flex-shrink-0" />}
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold truncate">{club.name}</h3>
                           <p className="text-sm text-muted-foreground">

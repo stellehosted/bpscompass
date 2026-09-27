@@ -8,13 +8,6 @@ import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -45,37 +38,23 @@ import {
   RefreshCw,
   AlertCircle,
   ArrowLeft,
-  HelpCircle,
   Mail,
   ChevronDown,
   ChevronUp,
 } from "lucide-react"
 import Link from "next/link"
+import { ClubsContent } from "@/components/clubsPage"
+import { HomeContent } from "@/components/homePage"
 
 interface Club {
   id: string
   name: string
   description: string
-  category: string
   image_url: string | null
   is_claimed: boolean
   president_id: string | null
   president_name: string | null
   member_count: number
-}
-
-interface Post {
-  id: string
-  content: string
-  image_url: string | null
-  club_id: string
-  club_name: string
-  club_avatar: string | null
-  author_id: string
-  author_name: string
-  author_avatar: string | null
-  likes_count: number
-  created_at: string
 }
 
 interface ClubMember {
@@ -88,36 +67,24 @@ interface ClubMember {
   joined_at: string
 }
 
-const CATEGORIES = [
-  { value: "academic", label: "Academic" },
-  { value: "arts", label: "Arts" },
-  { value: "sports", label: "Sports" },
-  { value: "technology", label: "Technology" },
-  { value: "service", label: "Service" },
-  { value: "hobby", label: "Hobby" },
-]
-
 export function AdminDashboard({ userId }: { userId: string }) {
   const [activeTab, setActiveTab] = useState("clubs")
   const [clubs, setClubs] = useState<Club[]>([])
-  const [posts, setPosts] = useState<Post[]>([])
+  const [posts, setPosts] = useState<unknown[]>([])
   const [loading, setLoading] = useState(true)
   const [searchQuery, setSearchQuery] = useState("")
+  // ClubsContent keeps its own club list, so bumping this key remounts it to reload
+  const [clubsVersion, setClubsVersion] = useState(0)
 
   // Create club dialog
   const [showCreateClub, setShowCreateClub] = useState(false)
   const [newClub, setNewClub] = useState({
     name: "",
     description: "",
-    category: "academic",
     meetingTime: "",
     location: "",
   })
   const [creatingClub, setCreatingClub] = useState(false)
-
-  // Delete post dialog
-  const [postToDelete, setPostToDelete] = useState<Post | null>(null)
-  const [deletingPost, setDeletingPost] = useState(false)
 
   // Membership management
   const [selectedClub, setSelectedClub] = useState<Club | null>(null)
@@ -153,6 +120,7 @@ export function AdminDashboard({ userId }: { userId: string }) {
   const loadData = async () => {
     setLoading(true)
     await Promise.all([loadClubs(), loadPosts()])
+    setClubsVersion((v) => v + 1)
     setLoading(false)
   }
 
@@ -176,7 +144,7 @@ export function AdminDashboard({ userId }: { userId: string }) {
   }
 
   const handleCreateClub = async () => {
-    if (!newClub.name || !newClub.description || !newClub.category) {
+    if (!newClub.name || !newClub.description) {
       alert("Please fill in all required fields")
       return
     }
@@ -195,11 +163,11 @@ export function AdminDashboard({ userId }: { userId: string }) {
         setNewClub({
           name: "",
           description: "",
-          category: "academic",
           meetingTime: "",
           location: "",
         })
         await loadClubs()
+        setClubsVersion((v) => v + 1)
       } else {
         const data = await response.json()
         alert(data.error || "Failed to create club")
@@ -209,32 +177,6 @@ export function AdminDashboard({ userId }: { userId: string }) {
       alert("Failed to create club")
     } finally {
       setCreatingClub(false)
-    }
-  }
-
-  const handleDeletePost = async () => {
-    if (!postToDelete) return
-
-    setDeletingPost(true)
-    try {
-      const response = await fetch(
-        `/api/posts/${postToDelete.id}?userId=${userId}`,
-        { method: "DELETE" }
-      )
-
-      if (response.ok) {
-        alert("Post deleted successfully!")
-        setPostToDelete(null)
-        await loadPosts()
-      } else {
-        const data = await response.json()
-        alert(data.error || "Failed to delete post")
-      }
-    } catch (error) {
-      console.error("Error deleting post:", error)
-      alert("Failed to delete post")
-    } finally {
-      setDeletingPost(false)
     }
   }
 
@@ -309,15 +251,7 @@ export function AdminDashboard({ userId }: { userId: string }) {
 
   const filteredClubs = clubs.filter(
     (club) =>
-      club.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      club.category.toLowerCase().includes(searchQuery.toLowerCase())
-  )
-
-  const filteredPosts = posts.filter(
-    (post) =>
-      post.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.club_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      post.author_name.toLowerCase().includes(searchQuery.toLowerCase())
+      club.name.toLowerCase().includes(searchQuery.toLowerCase())
   )
 
   if (loading) {
@@ -335,7 +269,7 @@ export function AdminDashboard({ userId }: { userId: string }) {
     <div className="max-w-6xl mx-auto px-3 sm:px-4 pb-4 pt-[calc(1rem+env(safe-area-inset-top))] sm:py-8 space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <Link href="/">
             <Button variant="ghost" size="icon" className="shrink-0">
               <ArrowLeft className="h-5 w-5" />
@@ -349,10 +283,16 @@ export function AdminDashboard({ userId }: { userId: string }) {
             </p>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={loadData}>
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Refresh
-        </Button>
+        <div className="flex shrink-0 items-center gap-2">
+          <Button size="sm" onClick={() => setShowCreateClub(true)} aria-label="Create Club">
+            <Plus className="h-4 w-4" />
+            <span className="max-sm:hidden">Create Club</span>
+          </Button>
+          <Button variant="outline" size="sm" onClick={loadData} aria-label="Refresh">
+            <RefreshCw className="h-4 w-4" />
+            <span className="max-sm:hidden">Refresh</span>
+          </Button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -395,20 +335,9 @@ export function AdminDashboard({ userId }: { userId: string }) {
         </Card>
       </div>
 
-      {/* Search */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-        <Input
-          placeholder="Search clubs, posts, or members..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10"
-        />
-      </div>
-
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="clubs" className="flex items-center gap-2">
             <Building className="h-4 w-4" />
             <span className="hidden sm:inline">Clubs</span>
@@ -421,120 +350,16 @@ export function AdminDashboard({ userId }: { userId: string }) {
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Members</span>
           </TabsTrigger>
-          <TabsTrigger value="faq" className="flex items-center gap-2">
-            <HelpCircle className="h-4 w-4" />
-            <span className="hidden sm:inline">FAQ</span>
-          </TabsTrigger>
         </TabsList>
 
-        {/* Clubs Tab */}
+        {/* Clubs Tab: the same page members see, plus admin-only club creation */}
         <TabsContent value="clubs" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold">All Clubs ({filteredClubs.length})</h2>
-            <Button onClick={() => setShowCreateClub(true)}>
-              <Plus className="h-4 w-4 mr-2" />
-              Create Club
-            </Button>
-          </div>
-
-          <div className="grid gap-3">
-            {filteredClubs.map((club) => (
-              <Card key={club.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={club.image_url || "/placeholder.svg"}
-                      alt={club.name}
-                      className="h-14 w-14 rounded-lg object-cover flex-shrink-0"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <Link href={`/clubs/${club.id}`}>
-                          <h3 className="font-semibold hover:underline">{club.name}</h3>
-                        </Link>
-                        <Badge variant="outline" className="text-xs">
-                          {club.category}
-                        </Badge>
-                        {club.is_claimed ? (
-                          <Badge className="bg-green-100 text-green-800 text-xs">
-                            Claimed
-                          </Badge>
-                        ) : (
-                          <Badge variant="secondary" className="text-xs">
-                            Unclaimed
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground truncate">
-                        {club.description}
-                      </p>
-                      <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Users className="h-3 w-3" />
-                          {club.member_count} members
-                        </span>
-                        {club.president_name && (
-                          <span className="flex items-center gap-1">
-                            <Crown className="h-3 w-3" />
-                            {club.president_name}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <ClubsContent key={clubsVersion} embedded showEdit />
         </TabsContent>
 
-        {/* Posts Tab */}
-        <TabsContent value="posts" className="space-y-4">
-          <h2 className="text-lg font-semibold">Recent Posts ({filteredPosts.length})</h2>
-
-          <div className="grid gap-3">
-            {filteredPosts.map((post) => (
-              <Card key={post.id} className="hover:shadow-md transition-shadow">
-                <CardContent className="p-4">
-                  <div className="flex items-start gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between gap-2">
-                        <div>
-                          <p className="font-medium">{post.author_name}</p>
-                          <p className="text-xs text-muted-foreground">
-                            in {post.club_name} •{" "}
-                            {new Date(post.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => setPostToDelete(post)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <p className="mt-2 text-sm line-clamp-2">{post.content}</p>
-                      {post.image_url && (
-                        <img
-                          src={post.image_url}
-                          alt="Post"
-                          className="mt-2 rounded-lg max-h-32 object-cover"
-                        />
-                      )}
-                      <p className="mt-2 text-xs text-muted-foreground">
-                        {post.likes_count} likes
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-            {filteredPosts.length === 0 && (
-              <p className="text-center text-muted-foreground py-8">No posts found</p>
-            )}
-          </div>
+        {/* Posts Tab: the same feed as the home page, with delete on every post */}
+        <TabsContent value="posts">
+          <HomeContent canDeleteAny />
         </TabsContent>
 
         {/* Memberships Tab */}
@@ -543,6 +368,16 @@ export function AdminDashboard({ userId }: { userId: string }) {
           <p className="text-sm text-muted-foreground">
             Select a club to view and manage its members. You can remove presidents to make a club unclaimed.
           </p>
+
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search clubs..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-10"
+            />
+          </div>
 
           <div className="grid md:grid-cols-2 gap-4">
             {/* Club Selection */}
@@ -565,11 +400,7 @@ export function AdminDashboard({ userId }: { userId: string }) {
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <img
-                        src={club.image_url || "/placeholder.svg"}
-                        alt={club.name}
-                        className="h-10 w-10 rounded-lg object-cover"
-                      />
+                      {club.image_url && <img src={club.image_url} alt={club.name} className="h-10 w-10 rounded-lg object-cover" />}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{club.name}</p>
                         <p className="text-xs text-muted-foreground">
@@ -692,24 +523,6 @@ export function AdminDashboard({ userId }: { userId: string }) {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Category *</label>
-              <Select
-                value={newClub.category}
-                onValueChange={(value) => setNewClub({ ...newClub, category: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CATEGORIES.map((cat) => (
-                    <SelectItem key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
               <label className="text-sm font-medium">Meeting Time</label>
               <Input
                 value={newClub.meetingTime}
@@ -736,33 +549,6 @@ export function AdminDashboard({ userId }: { userId: string }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Delete Post Dialog */}
-      <AlertDialog open={!!postToDelete} onOpenChange={() => setPostToDelete(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Post</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete this post by {postToDelete?.author_name}? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          {postToDelete && (
-            <div className="bg-muted rounded-lg p-3 text-sm">
-              <p className="line-clamp-3">{postToDelete.content}</p>
-            </div>
-          )}
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDeletePost}
-              disabled={deletingPost}
-              className="bg-destructive hover:bg-destructive/90"
-            >
-              {deletingPost ? "Deleting..." : "Delete Post"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Remove President Dialog */}
       <AlertDialog open={!!memberToRemove} onOpenChange={() => setMemberToRemove(null)}>

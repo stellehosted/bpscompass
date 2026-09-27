@@ -194,20 +194,6 @@ export function validateRole(role: string): { valid: boolean; sanitized: string;
 }
 
 /**
- * Validate category
- */
-export function validateCategory(category: string): { valid: boolean; sanitized: string; error?: string } {
-  const validCategories = ['academic', 'arts', 'sports', 'technology', 'service', 'hobby']
-  const sanitized = sanitizeText(category.trim().toLowerCase())
-
-  if (!validCategories.includes(sanitized)) {
-    return { valid: false, sanitized, error: 'Invalid category' }
-  }
-
-  return { valid: true, sanitized }
-}
-
-/**
  * Validate grade
  */
 export function validateGrade(grade: string): { valid: boolean; sanitized: string; error?: string } {

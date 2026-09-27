@@ -3,13 +3,16 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Calendar, MapPin, Mail, MessageSquare } from "lucide-react"
+import { Calendar, MapPin, Mail, MessageSquare, Pencil } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { openEmailAll } from "@/lib/email-all"
 import type { Permission } from "@/lib/auth/permissions"
 import { ClaimClubDialog } from "./dialogClaimClub"
 import { ClaimSponsorDialog } from "./dialogClaimSponsor"
 import { TransferPresidencyDialog } from "./dialogTransferPresidency"
+import { EditClubDialog } from "./dialogEditClub"
+import { ManageLeadershipDialog } from "./dialogManageLeadership"
+import { ManageTagsDialog } from "./dialogManageTags"
 import { CreatePostDialog } from "./dialogCreatePost"
 
 // Layout follows the "Club Card" symbol in The Compass.sketch (700x120, drawn
@@ -59,7 +62,6 @@ export interface Club {
   id: string
   name: string
   description: string
-  category: string
   member_count: number
   meeting_time: string | null
   location: string | null
@@ -79,10 +81,12 @@ interface ClubCardProps {
   onLeaveSponsor: (clubId: string) => void
   // Called after anything on the card changes the club (claim, sponsor, post)
   onChanged: () => void
+  // Adds an Edit icon (for anyone with the editClub permission), used by the admin dashboard
+  showEdit?: boolean
   index?: number
 }
 
-export function ClubCard({ club, onJoinLeave, onLeaveSponsor, onChanged, index = 0 }: ClubCardProps) {
+export function ClubCard({ club, onJoinLeave, onLeaveSponsor, onChanged, showEdit = false, index = 0 }: ClubCardProps) {
   const router = useRouter()
   const { user, isTeacher } = useAuth()
   const can = (permission: Permission) => !!club.permissions?.includes(permission)
@@ -265,6 +269,39 @@ export function ClubCard({ club, onJoinLeave, onLeaveSponsor, onChanged, index =
               </Button>
             }
           />
+        )}
+        {showEdit && user?.id && can("editClub") && (
+          <EditClubDialog
+            clubId={club.id}
+            clubName={club.name}
+            currentDescription={club.description}
+            currentMeetingTime={club.meeting_time}
+            currentLocation={club.location}
+            currentImageUrl={club.image_url}
+            onUpdateSuccess={onChanged}
+            trigger={
+              <Button variant="outline" size="icon" aria-label="Edit" title="Edit">
+                <Pencil className="size-5" />
+              </Button>
+            }
+          >
+            {can("manageMembers") && (
+              <ManageLeadershipDialog
+                clubId={club.id}
+                clubName={club.name}
+                currentUserId={user.id}
+                onUpdateSuccess={onChanged}
+              />
+            )}
+            {can("manageTags") && (
+              <ManageTagsDialog
+                clubId={club.id}
+                clubName={club.name}
+                currentTags={club.tags || []}
+                onUpdateSuccess={onChanged}
+              />
+            )}
+          </EditClubDialog>
         )}
         {primaryButton}
       </div>

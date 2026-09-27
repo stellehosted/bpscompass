@@ -17,7 +17,6 @@ let lostFoundItems: any[] = [
     status: "active",
     reporter: {
       name: "Sarah Johnson",
-      avatar: "/placeholder.svg?key=sarah2",
     },
   },
   {
@@ -34,7 +33,6 @@ let lostFoundItems: any[] = [
     status: "active",
     reporter: {
       name: "Mike Chen",
-      avatar: "/placeholder.svg?key=mike",
     },
   }
 ]
@@ -136,7 +134,6 @@ export async function POST(request: NextRequest) {
       status: 'active',
       reporter: {
         name: body.contactName,
-        avatar: "/placeholder.svg?key=user",
       }
     }
 

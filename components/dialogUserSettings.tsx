@@ -204,11 +204,7 @@ export function UserSettingsDialog({ open, onOpenChange, user, isTeacher }: User
                       <Card className="hover:bg-muted/50 transition-colors cursor-pointer">
                         <CardContent className="p-3">
                           <div className="flex items-center gap-3">
-                            <img
-                              src={club.image_url || "/placeholder.svg"}
-                              alt={club.name}
-                              className="h-10 w-10 rounded object-cover flex-shrink-0"
-                            />
+                            {club.image_url && <img src={club.image_url} alt={club.name} className="h-10 w-10 rounded object-cover flex-shrink-0" />}
                             <div className="flex-1 min-w-0">
                               <p className="font-medium text-sm truncate">{club.name}</p>
                               <Badge className={`${getRoleBadgeColor(club.memberRole)} text-xs mt-1`}>

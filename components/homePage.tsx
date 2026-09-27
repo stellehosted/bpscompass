@@ -7,7 +7,9 @@ import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/auth-context"
 import { PostCard, type ClubPost } from "@/components/postCard"
 
-export function HomeContent() {
+// `canDeleteAny` shows a delete button on every post, for coordinators (the API
+// re-checks the deleteAnyPost permission).
+export function HomeContent({ canDeleteAny = false }: { canDeleteAny?: boolean }) {
   const { user } = useAuth()
   const [posts, setPosts] = useState<ClubPost[]>([])
   const [loading, setLoading] = useState(true)
@@ -105,6 +107,26 @@ export function HomeContent() {
     }
   }
 
+  const handleDelete = async (postId: string) => {
+    if (!user?.id) return
+    if (!confirm("Are you sure you want to delete this post?")) return
+
+    try {
+      const response = await fetch(`/api/posts/${postId}?userId=${encodeURIComponent(user.id)}`, {
+        method: "DELETE",
+      })
+      if (response.ok) {
+        setPosts((prev) => prev.filter((p) => p.id !== postId))
+      } else {
+        const data = await response.json()
+        alert(data.error || "Failed to delete post")
+      }
+    } catch (error) {
+      console.error("Error deleting post:", error)
+      alert("Failed to delete post. Please try again.")
+    }
+  }
+
   if (loading) {
     return (
       <div className="max-w-2xl mx-auto px-4 py-8 flex items-center justify-center min-h-[60vh]">
@@ -152,7 +174,7 @@ export function HomeContent() {
         ) : (
           <>
             {posts.map((post) => (
-              <PostCard key={post.id} post={post} onLike={handleLike} />
+              <PostCard key={post.id} post={post} onLike={handleLike} onDelete={canDeleteAny ? handleDelete : undefined} />
             ))}
 
             {/* Load More Button */}

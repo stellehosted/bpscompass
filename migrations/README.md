@@ -58,3 +58,15 @@ ALTER TABLE users DROP COLUMN IF EXISTS user_type;
 - Migration is idempotent (safe to run multiple times)
 - Existing data is not affected
 - Foreign keys use CASCADE for cleanup
+
+## Drop Club Category (`drop_club_category.sql`)
+
+Clubs no longer have a category. This removes the `clubs.category` column and its index.
+
+Run it **before** deploying the code that stops sending a category. The column is `NOT NULL`, so creating a club without it fails until the column is gone.
+
+```bash
+psql "$DATABASE_URL" -f migrations/drop_club_category.sql
+```
+
+It is safe to re-run, and it permanently deletes the stored category values.

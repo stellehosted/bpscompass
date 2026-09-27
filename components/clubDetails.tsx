@@ -67,7 +67,6 @@ interface Club {
   id: string
   name: string
   description: string
-  category: "academic" | "arts" | "sports" | "technology" | "service" | "hobby"
   member_count: number
   meeting_time: string | null
   location: string | null
@@ -443,7 +442,6 @@ export function ClubDetailPage({ clubId }: { clubId: string }) {
                   clubId={club.id}
                   clubName={club.name}
                   currentDescription={club.description}
-                  currentCategory={club.category}
                   currentMeetingTime={club.meeting_time}
                   currentLocation={club.location}
                   currentImageUrl={club.image_url}
