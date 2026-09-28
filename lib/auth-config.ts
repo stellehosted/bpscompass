@@ -16,7 +16,10 @@ export const msalConfig: Configuration = {
     redirectUri: typeof window !== "undefined" ? window.location.origin : "",
   },
   cache: {
-    cacheLocation: "sessionStorage", // This configures where your cache will be stored
+    // "localStorage" persists the token cache across tabs and browser restarts,
+    // so acquireTokenSilent() (see auth-context.tsx) can log users back in
+    // automatically instead of sessionStorage's cache-per-tab, gone-on-close behavior.
+    cacheLocation: "localStorage",
     storeAuthStateInCookie: true, // Enable for better compatibility with mobile browsers
   },
   system: {
@@ -31,11 +34,35 @@ export const loginRequest: PopupRequest = {
   scopes: ["User.Read", "User.ReadBasic.All", "email", "profile", "openid"],
 }
 
+// "Remember me" (login screen checkbox): the MSAL cache always lives in
+// localStorage so acquireTokenSilent() *can* persist a session across browser
+// restarts, but when the user opts out we drop that cache the moment they
+// leave the tab (see the "pagehide" listener in auth-context.tsx) so it never
+// actually survives to the next visit. Defaults to true (stay signed in) so
+// first-time visitors get the persistent behavior without having to opt in.
+const REMEMBER_ME_KEY = "bps-remember-me"
+
+export const getRememberMe = (): boolean => {
+  if (typeof window === "undefined") return true
+  try {
+    return localStorage.getItem(REMEMBER_ME_KEY) !== "false"
+  } catch {
+    return true
+  }
+}
+
+export const setRememberMe = (value: boolean): void => {
+  if (typeof window === "undefined") return
+  try {
+    localStorage.setItem(REMEMBER_ME_KEY, String(value))
+  } catch {
+    // Ignore write failures (e.g. Safari private browsing) - defaults to remembered.
+  }
+}
+
 // BPS School domain validation
 export const ALLOWED_DOMAINS = [
   "berkeleyprep.org",
-  "berkeleyprep.com",
-  // Add any other official BPS domains here
 ]
 
 export const isBerkeleyPrepEmail = (email: string | undefined | null): boolean => {

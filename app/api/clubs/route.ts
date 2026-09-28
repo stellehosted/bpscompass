@@ -74,6 +74,7 @@ export async function GET(request: NextRequest) {
           ...club,
           is_joined: isMember || isSponsor, // Sponsors are considered "joined"
           is_sponsor: isSponsor,
+          is_coordinator: userIsCoordinator,
           memberRole: isSponsor ? 'sponsor' : (membershipMap.get(club.id) || null),
           // What this viewer may do in this club; the club cards show buttons from this list
           permissions: permissionsForRoles(

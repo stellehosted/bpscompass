@@ -14,15 +14,15 @@ type ActiveSection = "home" | "clubs"
 function MainLayoutContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
-  const [activeSection, setActiveSection] = useState<ActiveSection>("home")
+  // Start from the URL so coming back to ?section=clubs doesn't flash the Home tab first
+  const [activeSection, setActiveSection] = useState<ActiveSection>(
+    searchParams.get("section") === "clubs" ? "clubs" : "home"
+  )
   const { user, isAuthenticated, isLoading, hasProfile, logout } = useAuth()
 
   // Read section from URL on mount
   useEffect(() => {
-    const section = searchParams.get("section") as ActiveSection
-    if (section === "clubs" || section === "home") {
-      setActiveSection(section)
-    }
+    setActiveSection(searchParams.get("section") === "clubs" ? "clubs" : "home")
   }, [searchParams])
 
   // Show loading state

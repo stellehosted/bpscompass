@@ -6,6 +6,9 @@ import { RefreshCw } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { CompassHero } from "@/components/loginCompass"
 import { useToast } from "@/hooks/use-toast"
+import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
+import { getRememberMe, setRememberMe } from "@/lib/auth-config"
 
 const berkeley = localFont({
   src: "../fonts/BerkeleyStd-Black.otf",
@@ -96,19 +99,25 @@ const titleStyle: CSSProperties = {
   whiteSpace: "nowrap",
 }
 
+// Position/size only — color, radius, font and weight now come from the
+// shared Button component (variant="secondary" already matches this design's
+// carolina-blue-on-black exactly; see components/ui/button.tsx).
 const buttonStyle: CSSProperties = {
   position: "absolute",
   left: pct(1170),
   top: pct(653),
   width: pct(400),
   height: pct(120),
-  borderRadius: "9999px",
-  background: "#56a0d3",
-  color: "#000000",
-  fontFamily: AVENIR,
-  fontWeight: 900,
   fontSize: pct(50),
-  letterSpacing: 0,
+}
+
+const rememberMeStyle: CSSProperties = {
+  position: "absolute",
+  left: pct(1170),
+  top: pct(790),
+  width: pct(400),
+  fontFamily: AVENIR,
+  fontSize: pct(24),
 }
 
 // "Made with love": Avenir Book, 30, right aligned.
@@ -132,14 +141,11 @@ const portraitTitleStyle: CSSProperties = {
   color: "#ffffff",
 }
 
+// Position/size only — see buttonStyle above.
 const portraitButtonStyle: CSSProperties = {
-  fontFamily: AVENIR,
-  fontWeight: 900,
   fontSize: "clamp(1.25rem, 5vw, 2rem)",
   width: "clamp(200px, 52vw, 380px)",
   height: "clamp(3.5rem, 14vw, 5rem)",
-  background: "#56a0d3",
-  color: "#000000",
 }
 
 const portraitFooterStyle: CSSProperties = {
@@ -153,7 +159,13 @@ const portraitFooterStyle: CSSProperties = {
 export function LoginScreen() {
   const { login, isLoading } = useAuth()
   const [showReset, setShowReset] = useState(false)
+  const [rememberMe, setRememberMeState] = useState(() => getRememberMe())
   const { toast } = useToast()
+
+  const handleRememberMeChange = (checked: boolean) => {
+    setRememberMeState(checked)
+    setRememberMe(checked)
+  }
 
   // iOS Safari tints its chrome from the document background and theme-colour,
   // not from this screen's own container, so a full-bleed splash otherwise
@@ -235,20 +247,35 @@ export function LoginScreen() {
           BPS Compass
         </h1>
 
-        <button
+        <Button
           type="button"
           onClick={handleMicrosoftLogin}
           disabled={isLoading}
+          variant="secondary"
           style={buttonStyle}
-          className="cursor-pointer transition-colors hover:bg-[#4a91c2] disabled:opacity-60"
+          className="font-black"
         >
           {isLoading ? "Signing in..." : "Log In"}
-        </button>
+        </Button>
+
+        <label
+          htmlFor="remember-me-desktop"
+          className="flex cursor-pointer select-none items-center justify-center gap-[0.6cqw] text-white/80"
+          style={rememberMeStyle}
+        >
+          <Checkbox
+            id="remember-me-desktop"
+            checked={rememberMe}
+            onCheckedChange={(checked) => handleRememberMeChange(checked === true)}
+            className="h-[1.4cqw] w-[1.4cqw] rounded-[0.3cqw] bg-white/10 ring-1 ring-white/40 data-[state=checked]:bg-[#56a0d3] data-[state=checked]:ring-[#56a0d3] data-[state=checked]:text-black"
+          />
+          Remember me
+        </label>
 
         {showReset && (
           <div
             className="absolute flex flex-col items-center gap-[1cqw] text-center text-white"
-            style={{ left: pct(1170), top: pct(820), width: pct(400), fontFamily: AVENIR, fontSize: pct(22) }}
+            style={{ left: pct(1170), top: pct(860), width: pct(400), fontFamily: AVENIR, fontSize: pct(22) }}
           >
             <p className="opacity-70">Login stuck? Try resetting the authentication state.</p>
             <button
@@ -281,15 +308,30 @@ export function LoginScreen() {
             BPS Compass
           </h1>
 
-          <button
+          <Button
             type="button"
             onClick={handleMicrosoftLogin}
             disabled={isLoading}
+            variant="secondary"
             style={portraitButtonStyle}
-            className="rounded-full transition-colors hover:bg-[#4a91c2] disabled:opacity-60"
+            className="font-black"
           >
             {isLoading ? "Signing in..." : "Log In"}
-          </button>
+          </Button>
+
+          <label
+            htmlFor="remember-me-mobile"
+            className="flex cursor-pointer select-none items-center gap-2 text-sm text-white/80"
+            style={{ fontFamily: AVENIR }}
+          >
+            <Checkbox
+              id="remember-me-mobile"
+              checked={rememberMe}
+              onCheckedChange={(checked) => handleRememberMeChange(checked === true)}
+              className="h-4 w-4 bg-white/10 ring-1 ring-white/40 data-[state=checked]:bg-[#56a0d3] data-[state=checked]:ring-[#56a0d3] data-[state=checked]:text-black"
+            />
+            Remember me
+          </label>
 
           {showReset && (
             <div

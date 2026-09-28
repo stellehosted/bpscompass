@@ -71,6 +71,7 @@ export interface Club {
   is_claimed: boolean
   tags: string[]
   memberRole?: string | null
+  is_coordinator?: boolean
   // What the viewer may do in this club (from /api/clubs, see lib/auth/permissions.ts)
   permissions?: Permission[]
 }
@@ -89,7 +90,10 @@ interface ClubCardProps {
 export function ClubCard({ club, onJoinLeave, onLeaveSponsor, onChanged, showEdit = false, index = 0 }: ClubCardProps) {
   const router = useRouter()
   const { user, isTeacher } = useAuth()
-  const can = (permission: Permission) => !!club.permissions?.includes(permission)
+  // Coordinator tools live in the admin dashboard (showEdit): elsewhere, a coordinator
+  // with no role of their own in the club gets no buttons from that permission
+  const viewOnly = !!club.is_coordinator && !club.is_joined && !showEdit
+  const can = (permission: Permission) => !viewOnly && !!club.permissions?.includes(permission)
 
   // The transfer dialog needs the member list, which the clubs list doesn't
   // carry, so presidents (the only ones who get that dialog) load it up front

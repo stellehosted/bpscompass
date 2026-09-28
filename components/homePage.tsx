@@ -1,11 +1,17 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Users, Loader2, Newspaper } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/auth-context"
 import { PostCard, type ClubPost } from "@/components/postCard"
+
+// Feed snapshot kept across a visit to a club page. PostCard sets FEED_RESTORE_FLAG when a
+// club link is clicked; the next mount of the feed restores the snapshot (once) instead of
+// reloading from page 1 at the top.
+const FEED_SNAPSHOT_KEY = "compass:feed-snapshot"
+export const FEED_RESTORE_FLAG = "compass:feed-restore"
 
 // `canDeleteAny` shows a delete button on every post, for coordinators (the API
 // re-checks the deleteAnyPost permission).
@@ -16,6 +22,24 @@ export function HomeContent({ canDeleteAny = false }: { canDeleteAny?: boolean }
   const [loadingMore, setLoadingMore] = useState(false)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)
+
+  const pendingScroll = useRef<number | null>(null)
+  const latest = useRef({ posts, page, hasMore, userId: user?.id, scrollY: 0 })
+  latest.current = { ...latest.current, posts, page, hasMore, userId: user?.id }
+
+  // Track scroll position and snapshot the feed when leaving it
+  useEffect(() => {
+    const onScroll = () => {
+      latest.current.scrollY = window.scrollY
+    }
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => {
+      window.removeEventListener("scroll", onScroll)
+      try {
+        sessionStorage.setItem(FEED_SNAPSHOT_KEY, JSON.stringify(latest.current))
+      } catch {}
+    }
+  }, [])
 
   // Load posts with pagination
   const loadPosts = async (pageNum: number = 1, append: boolean = false) => {
@@ -51,6 +75,27 @@ export function HomeContent({ canDeleteAny = false }: { canDeleteAny?: boolean }
     }
   }
 
+  // After restoring a cached feed, quietly patch in fresh like state. Order and length stay
+  // untouched so the restored scroll position doesn't shift.
+  const refreshLikes = async (count: number) => {
+    try {
+      const limit = Math.min(count, 50)
+      const url = `/api/feed?page=1&limit=${limit}${user?.id ? `&userId=${user.id}` : ""}`
+      const response = await fetch(url)
+      if (!response.ok) return
+      const result = await response.json()
+      const fresh = new Map<string, ClubPost>(result.data.map((p: ClubPost) => [p.id, p]))
+      setPosts((prev) =>
+        prev.map((p) => {
+          const f = fresh.get(p.id)
+          return f ? { ...p, likes_count: f.likes_count, isLiked: f.isLiked } : p
+        })
+      )
+    } catch (error) {
+      console.error("Error refreshing likes:", error)
+    }
+  }
+
   // Load more posts
   const loadMore = () => {
     if (!loadingMore && hasMore) {
@@ -59,8 +104,33 @@ export function HomeContent({ canDeleteAny = false }: { canDeleteAny?: boolean }
   }
 
   useEffect(() => {
+    try {
+      const shouldRestore = sessionStorage.getItem(FEED_RESTORE_FLAG) === "1"
+      sessionStorage.removeItem(FEED_RESTORE_FLAG)
+      const raw = sessionStorage.getItem(FEED_SNAPSHOT_KEY)
+      if (shouldRestore && raw) {
+        const snap = JSON.parse(raw)
+        if (snap.userId === user?.id && Array.isArray(snap.posts) && snap.posts.length > 0) {
+          setPosts(snap.posts)
+          setPage(snap.page)
+          setHasMore(snap.hasMore)
+          setLoading(false)
+          pendingScroll.current = snap.scrollY
+          refreshLikes(snap.posts.length)
+          return
+        }
+      }
+    } catch {}
     loadPosts(1, false)
   }, [user?.id])
+
+  // Once restored posts are rendered, jump back to where the user left off
+  useEffect(() => {
+    if (pendingScroll.current !== null && !loading) {
+      window.scrollTo(0, pendingScroll.current)
+      pendingScroll.current = null
+    }
+  }, [posts, loading])
 
   const handleLike = async (postId: string, isLiked: boolean) => {
     if (!user?.id) {

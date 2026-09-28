@@ -88,7 +88,15 @@ export function PostCard({
             {post.title || post.club_name || "Club"}
           </h3>
           <p className="text-xs font-medium truncate">
-            <Link href={`/clubs/${post.club_id}`} className="text-black hover:underline underline-offset-2">
+            <Link
+              href={`/clubs/${post.club_id}`}
+              onClick={() => {
+                try {
+                  sessionStorage.setItem("compass:feed-restore", "1")
+                } catch {}
+              }}
+              className="text-black hover:underline underline-offset-2"
+            >
               {post.club_name || "Club"}
             </Link>
             <span className="text-black/50"> • {post.author_name} • {formatTimestamp(post.created_at)}</span>

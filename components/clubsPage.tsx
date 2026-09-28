@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback, useMemo } from "react"
+import { useState, useEffect, useLayoutEffect, useCallback, useMemo } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -14,6 +14,27 @@ import { ClubCard, type Club } from "./clubCard"
 const TOGGLE_TRIGGER =
   "h-10 rounded-full px-4 text-sm font-bold tracking-wide text-black data-[state=active]:bg-[var(--button-default)] data-[state=active]:text-white"
 
+// Which tab is open and how far down the list is scrolled are remembered for the
+// browser tab session, so opening a club and coming back lands you where you left.
+const VIEW_KEY = "clubs-view"
+const scrollKey = (view: string) => `clubs-scroll-${view}`
+
+function readSession(key: string): string | null {
+  try {
+    return sessionStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
+function writeSession(key: string, value: string) {
+  try {
+    sessionStorage.setItem(key, value)
+  } catch {
+    // Storage can be unavailable (private windows); remembering is best-effort
+  }
+}
+
 // `embedded` is for pages that already provide their own spacing and have no
 // bottom tab bar (the admin dashboard): no outer padding, no My Clubs / All Clubs
 // toggle (it just lists every club), and on phones the search bar stays at the
@@ -24,7 +45,11 @@ export function ClubsContent({ embedded = false, showEdit = false }: { embedded?
   const [clubs, setClubs] = useState<Club[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   // Lives here (not in Tabs) so a reload after joining doesn't jump back to My Clubs
-  const [view, setView] = useState(embedded ? "all" : "my-clubs")
+  const [view, setView] = useState(() => {
+    if (embedded) return "all"
+    const saved = readSession(VIEW_KEY)
+    return saved === "all" || saved === "my-clubs" ? saved : "my-clubs"
+  })
   const [loading, setLoading] = useState(true)
 
   // Load clubs from API
@@ -49,6 +74,23 @@ export function ClubsContent({ embedded = false, showEdit = false }: { embedded?
     loadClubs()
   }, [loadClubs])
 
+
+  const handleViewChange = (next: string) => {
+    setView(next)
+    if (!embedded) writeSession(VIEW_KEY, next)
+  }
+
+  // Put the page back where it was once the list has rendered (it can't scroll
+  // that far while the loading spinner is showing), then start tracking again.
+  const ready = !(loading && clubs.length === 0)
+  useLayoutEffect(() => {
+    if (embedded || !ready) return
+    const saved = Number(readSession(scrollKey(view)))
+    window.scrollTo(0, Number.isFinite(saved) ? saved : 0)
+    const onScroll = () => writeSession(scrollKey(view), String(window.scrollY))
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [embedded, ready, view])
 
   const handleJoinLeave = useCallback(async (clubId: string, isJoined: boolean) => {
     if (!user?.id) return
@@ -152,7 +194,7 @@ export function ClubsContent({ embedded = false, showEdit = false }: { embedded?
 
   return (
     <div className={embedded ? "max-w-[700px] mx-auto" : "max-w-[700px] mx-auto px-3 sm:px-4 pt-6 max-md:pb-24 md:py-10"}>
-      <Tabs value={view} onValueChange={setView} className="w-full">
+      <Tabs value={view} onValueChange={handleViewChange} className="w-full">
         {/* On phones the search bar and toggle dock just above the bottom tab bar (3.5rem tall) */}
         <div
           className={

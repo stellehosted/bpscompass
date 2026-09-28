@@ -7,14 +7,17 @@ import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Calendar, MapPin, ArrowLeft } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
+import { Navigation } from "@/components/navigation"
 import { formatDisplayName } from "@/lib/utils"
 import { openEmailAll } from "@/lib/email-all"
-import type { Permission } from "@/lib/auth/permissions"
+import { permissionsForRoles, rolesFor, type Permission } from "@/lib/auth/permissions"
 import { ManageLeadershipDialog } from "./dialogManageLeadership"
 import { EditClubDialog } from "./dialogEditClub"
 import { ManageTagsDialog } from "./dialogManageTags"
 import { TransferPresidencyDialog } from "./dialogTransferPresidency"
 import { CreatePostDialog } from "./dialogCreatePost"
+import { ClaimClubDialog } from "./dialogClaimClub"
+import { ClaimSponsorDialog } from "./dialogClaimSponsor"
 import { PostCard, type ClubPost } from "./postCard"
 
 const berkeley = localFont({
@@ -108,7 +111,7 @@ function PersonWithEmail({ name, email }: { name: string; email: string }) {
 
 export function ClubDetailPage({ clubId }: { clubId: string }) {
   const router = useRouter()
-  const { user } = useAuth()
+  const { user, logout, isTeacher } = useAuth()
   const [club, setClub] = useState<Club | null>(null)
   const [members, setMembers] = useState<ClubMember[]>([])
   const [posts, setPosts] = useState<ClubPost[]>([])
@@ -149,6 +152,11 @@ export function ClubDetailPage({ clubId }: { clubId: string }) {
   useEffect(() => {
     loadClubDetails()
   }, [loadClubDetails])
+
+  const handleSectionChange = useCallback(
+    (section: "home" | "clubs") => router.push(section === "home" ? "/" : "/?section=clubs"),
+    [router]
+  )
 
   const handleJoinLeave = useCallback(async () => {
     if (!user?.id || !club) return
@@ -280,12 +288,15 @@ export function ClubDetailPage({ clubId }: { clubId: string }) {
   // edit, join, etc.) keep it mounted so open dialogs stay open.
   if (loading && !club) {
     return (
-      <div className="max-w-6xl mx-auto px-4 py-8 flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading club details...</p>
+      <>
+        <Navigation activeSection="clubs" onSectionChange={handleSectionChange} user={user} onLogout={logout} />
+        <div className="max-w-6xl mx-auto px-4 py-8 flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading club details...</p>
+          </div>
         </div>
-      </div>
+      </>
     )
   }
 
@@ -294,9 +305,8 @@ export function ClubDetailPage({ clubId }: { clubId: string }) {
   }
 
   const role = club.memberRole
-  // Which buttons to show comes from the server's list for this viewer (the
-  // rules live in lib/auth/permissions.ts, and the API enforces the same ones)
-  const can = (permission: Permission) => club.permissions.includes(permission)
+  const ownPermissions = permissionsForRoles(rolesFor({ memberRole: role, isSponsor: club.is_sponsor }))
+  const can = (permission: Permission) => ownPermissions.includes(permission)
 
   const leaders = members.filter((m) => LEADERSHIP_ROLES.includes(m.role))
   const regularMembers = members.filter((m) => m.role === "member")
@@ -308,6 +318,38 @@ export function ClubDetailPage({ clubId }: { clubId: string }) {
         <Button variant="destructive" className={LEAVE_BUTTON} onClick={handleLeaveSponsor}>
           Leave
         </Button>
+      )
+    } else if (isTeacher) {
+      // Teachers only ever sponsor (or leave), never join, claimed or not
+      leaveButton = (
+        <ClaimSponsorDialog
+          clubId={club.id}
+          clubName={club.name}
+          userId={user.id}
+          userName={user.name || "User"}
+          userEmail={user.email}
+          isVerifiedTeacher={isTeacher}
+          isAlreadySponsor={false}
+          onClaimSuccess={loadClubDetails}
+          trigger={<Button className={LEAVE_BUTTON}>Sponsor!</Button>}
+        />
+      )
+    } else if (!club.is_claimed) {
+      leaveButton = (
+        <ClaimClubDialog
+          clubId={club.id}
+          clubName={club.name}
+          userId={user.id}
+          userName={user.name || "User"}
+          userEmail={user.email}
+          userRole={user.role}
+          userGrade={user.grade}
+          userDepartment={user.department}
+          userBio={user.bio}
+          userAvatar={user.profilePicture}
+          onClaimSuccess={loadClubDetails}
+          trigger={<Button className={LEAVE_BUTTON}>Claim!</Button>}
+        />
       )
     } else if (role === "president") {
       // Presidents can't just leave — they hand off or unclaim the club
@@ -376,7 +418,9 @@ export function ClubDetailPage({ clubId }: { clubId: string }) {
   )
 
   return (
-    <div className="relative pb-16">
+    <>
+      <Navigation activeSection="clubs" onSectionChange={handleSectionChange} user={user} onLogout={logout} />
+      <div className="relative pb-16 max-md:pb-[calc(3.5rem+env(safe-area-inset-bottom))] md:pt-16">
       {/* Header image: full-bleed, fading into the page background */}
       <div className="absolute inset-x-0 top-0 h-[calc(14rem+env(safe-area-inset-top))] sm:h-[300px] overflow-hidden">
         {club.image_url && (
@@ -396,11 +440,11 @@ export function ClubDetailPage({ clubId }: { clubId: string }) {
         <Button
           variant="outline"
           size="sm"
-          onClick={() => router.push("/?section=clubs")}
+          onClick={() => (window.history.length > 1 ? router.back() : router.push("/?section=clubs"))}
           className="absolute top-[calc(1rem+env(safe-area-inset-top))] left-4 sm:left-8 sm:top-4"
         >
           <ArrowLeft />
-          Clubs
+          Back
         </Button>
 
         <h1
@@ -478,9 +522,7 @@ export function ClubDetailPage({ clubId }: { clubId: string }) {
               )}
             </>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              This club is unclaimed. Visit the main clubs page to claim it.
-            </p>
+            leaveButton
           )}
 
           <Sheet>
@@ -529,6 +571,7 @@ export function ClubDetailPage({ clubId }: { clubId: string }) {
           </aside>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   )
 }

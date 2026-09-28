@@ -196,6 +196,7 @@ export async function GET(
           is_joined: userMembership !== null,
           memberRole: userMembership,
           is_sponsor: userIsSponsor,
+          is_coordinator: userIsCoordinator,
           // What this viewer may do here; the page shows buttons from this list
           permissions: permissionsForRoles(
             rolesFor({ memberRole: userMembership, isSponsor: userIsSponsor, isCoordinator: userIsCoordinator })

@@ -2,11 +2,11 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react"
 import { PublicClientApplication, AccountInfo, AuthenticationResult } from "@azure/msal-browser"
-import { msalConfig, loginRequest, isBerkeleyPrepEmail, UserProfile } from "@/lib/auth-config"
+import { msalConfig, loginRequest, isBerkeleyPrepEmail, getRememberMe, UserProfile } from "@/lib/auth-config"
 import { DEMO_MODE, DEMO_EMAIL } from "@/lib/demo-mode"
 import { debugMSAL } from "@/lib/debug-msal"
 import { setupCryptoPolyfill, isSecureContext, getSecurityWarning } from "@/lib/crypto-polyfill"
-import { autoFixStuckInteraction } from "@/lib/clear-msal-cache"
+import { autoFixStuckInteraction, clearMSALCache } from "@/lib/clear-msal-cache"
 import { formatDisplayName } from "@/lib/utils"
 // Removed server-side imports to prevent bundling issues
 
@@ -45,6 +45,16 @@ if (typeof window !== 'undefined') {
   
   // Auto-fix any stuck interaction state from previous sessions
   autoFixStuckInteraction()
+
+  // "Remember me" opt-out: the MSAL cache lives in localStorage so it can
+  // survive a restart, but if the user unchecked "remember me" we wipe it
+  // the moment they actually leave (tab/window close, or navigating away),
+  // rather than persisting it as localStorage otherwise would.
+  window.addEventListener('pagehide', () => {
+    if (!getRememberMe()) {
+      clearMSALCache()
+    }
+  })
 }
 
 // Initialize MSAL (after polyfill is set up)
