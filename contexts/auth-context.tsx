@@ -209,7 +209,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
 
           // Atomic authentication and registration: immediately upsert user to database
-          await upsertUserToDatabase(userInfo.email, formatDisplayName(userInfo.displayName || userInfo.name || ""), userInfo.picture)
+          await upsertUserToDatabase(userInfo.email, formatDisplayName(userInfo.displayName || userInfo.name || ""))
 
           // Retrieve user profile and teacher status in parallel — zero extra latency.
           const [databaseUser, teacherData] = await Promise.all([
@@ -243,7 +243,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
             try {
               // Atomic authentication and registration with fallback data
-              await upsertUserToDatabase(account.username, formatDisplayName(account.name || ""), undefined)
+              await upsertUserToDatabase(account.username, formatDisplayName(account.name || ""))
 
               // Retrieve user profile and teacher status in parallel.
               const [databaseUser, teacherData] = await Promise.all([
@@ -426,8 +426,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: user.role,
         grade: user.grade,
         department: user.department,
-        profilePicture: user.avatar_url,
-        bio: user.bio,
         interests: [], // Not stored in database yet
         createdAt: new Date(user.created_at),
         updatedAt: new Date(user.updated_at),
@@ -452,7 +450,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return true
   }
 
-  const upsertUserToDatabase = async (email: string, name: string, avatarUrl?: string): Promise<void> => {
+  const upsertUserToDatabase = async (email: string, name: string): Promise<void> => {
     try {
       const response = await fetch('/api/users/sync', {
         method: 'POST',
@@ -460,7 +458,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         body: JSON.stringify({
           email,
           name,
-          profilePicture: avatarUrl,
           role: 'student'
         })
       })
@@ -495,8 +492,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           role: profileData.role || user.role,
           grade: profileData.grade,
           department: profileData.department,
-          profilePicture: profileData.profilePicture,
-          bio: profileData.bio,
         })
       })
 
@@ -516,8 +511,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: updatedUser.role,
         grade: updatedUser.grade,
         department: updatedUser.department,
-        profilePicture: updatedUser.avatar_url,
-        bio: updatedUser.bio,
         interests: profileData.interests || user.interests || [],
         createdAt: new Date(updatedUser.created_at),
         updatedAt: new Date(updatedUser.updated_at),

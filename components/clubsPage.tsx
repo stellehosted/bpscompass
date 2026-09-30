@@ -11,9 +11,6 @@ import { ClubCard, type Club } from "./clubCard"
 // Clubs are one column of "Club Card"s (components/clubCard.tsx), 16px apart,
 // under a search bar with a My Clubs / All Clubs toggle beside it.
 
-const TOGGLE_TRIGGER =
-  "h-10 rounded-full px-4 text-sm font-bold tracking-wide text-black data-[state=active]:bg-[var(--button-default)] data-[state=active]:text-white"
-
 // Which tab is open and how far down the list is scrolled are remembered for the
 // browser tab session, so opening a club and coming back lands you where you left.
 const VIEW_KEY = "clubs-view"
@@ -213,11 +210,11 @@ export function ClubsContent({ embedded = false, showEdit = false }: { embedded?
             />
           </div>
           {!embedded && (
-            <TabsList className="h-12 shrink-0 rounded-full bg-[var(--button-outline)] p-1">
-              <TabsTrigger value="my-clubs" className={TOGGLE_TRIGGER}>
+            <TabsList className="shrink-0">
+              <TabsTrigger value="my-clubs">
                 My Clubs
               </TabsTrigger>
-              <TabsTrigger value="all" className={TOGGLE_TRIGGER}>
+              <TabsTrigger value="all">
                 All Clubs
               </TabsTrigger>
             </TabsList>

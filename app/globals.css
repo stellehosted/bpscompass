@@ -3,6 +3,11 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* The flat offset shadow shared by cards, dialogs, alerts, toasts and menus */
+@utility shadow-hard {
+  box-shadow: 0 2px 0 rgba(0, 34, 49, 0.16);
+}
+
 :root {
   /* Berkeley Blue */
   --navy: #00447c;
@@ -30,7 +35,7 @@
   --muted-foreground: oklch(0.45 0.02 258);
 
   /* Light blue accent for highlights */
-  --accent: oklch(0.70 0.12 230); /* Light Blue */
+  --accent: var(--carolina-blue);
   --accent-foreground: #000000;
 
   --destructive: var(--destructive-red);

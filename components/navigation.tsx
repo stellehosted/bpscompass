@@ -10,13 +10,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Home, Users, Bell, Settings, LogOut, Menu, HelpCircle, User } from "lucide-react"
+import { Home, Users, Bell, Settings, LogOut, Menu, HelpCircle, User, Shield, LayoutDashboard } from "lucide-react"
 import { UserProfile } from "@/lib/auth-config"
 import { UserSettingsDialog } from "./dialogUserSettings"
 import { Logo } from "./logo"
 import Link from "next/link"
 
-type ActiveSection = "home" | "clubs"
+type ActiveSection = "home" | "clubs" | "notifications"
 
 interface NavigationProps {
   activeSection: ActiveSection
@@ -31,6 +31,20 @@ export function Navigation({ activeSection, onSectionChange, user, onLogout }: N
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const [mobileDropdownOpen, setMobileDropdownOpen] = useState(false)
   const [notificationCount, setNotificationCount] = useState(0)
+  const [isCoordinator, setIsCoordinator] = useState(false)
+  const [isSponsor, setIsSponsor] = useState(false)
+
+  // Dashboard links depend on roles, which only the stats endpoint reports. Fetched once, not polled.
+  useEffect(() => {
+    if (!user?.id) return
+    fetch(`/api/users/stats?userId=${user.id}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        setIsCoordinator(!!data?.data?.isCoordinator)
+        setIsSponsor(!!data?.data?.isSponsor)
+      })
+      .catch((error) => console.error("Error fetching user roles:", error))
+  }, [user?.id])
 
   const fetchNotificationCount = useCallback(async () => {
     if (!user?.id || document.hidden) return
@@ -74,6 +88,27 @@ export function Navigation({ activeSection, onSectionChange, user, onLogout }: N
     setTimeout(() => setSettingsOpen(true), 100)
   }
 
+  const dashboardItems = (
+    <>
+      {isCoordinator && (
+        <Link href="/admin">
+          <DropdownMenuItem className="font-bold text-xs tracking-wide cursor-pointer">
+            <LayoutDashboard className="mr-2 h-4 w-4" />
+            <span>Admin Dashboard</span>
+          </DropdownMenuItem>
+        </Link>
+      )}
+      {isSponsor && (
+        <Link href="/sponsor">
+          <DropdownMenuItem className="font-bold text-xs tracking-wide cursor-pointer">
+            <Shield className="mr-2 h-4 w-4" />
+            <span>Sponsor Dashboard</span>
+          </DropdownMenuItem>
+        </Link>
+      )}
+    </>
+  )
+
   const navItems = [
     { id: "home" as const, label: "Home", icon: Home },
     { id: "clubs" as const, label: "Clubs", icon: Users },
@@ -84,9 +119,9 @@ export function Navigation({ activeSection, onSectionChange, user, onLogout }: N
       {/* Desktop top bar */}
       <nav className="hidden md:block fixed top-0 left-0 right-0 z-50 bg-background border-b border-border">
         <div className="max-w-7xl mx-auto px-4 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+          <div className="grid grid-cols-[1fr_auto_1fr] items-center h-16">
             {/* Logo and brand */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 justify-self-start">
               <Logo className="h-9 w-9" />
               <div>
                 <span className="text-xl font-black text-foreground tracking-tight">
@@ -113,22 +148,24 @@ export function Navigation({ activeSection, onSectionChange, user, onLogout }: N
                   </Button>
                 )
               })}
+
+              <Button
+                variant={activeSection === "notifications" ? "default" : "outline"}
+                className={`relative gap-2 ${activeSection === "notifications" ? "" : "bg-background"}`}
+                onClick={() => onSectionChange("notifications")}
+              >
+                <Bell className="h-4 w-4" />
+                Alerts
+                {notificationCount > 0 && (
+                  <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-secondary flex items-center justify-center text-[8px] font-bold text-secondary-foreground">
+                    {notificationCount > 9 ? '9+' : notificationCount}
+                  </span>
+                )}
+              </Button>
             </div>
 
             {/* Right side actions */}
-            <div className="flex items-center gap-3">
-              {/* Notifications */}
-              <Link href="/notifications">
-                <Button variant="outline" size="icon" className="relative h-10 w-10 bg-background">
-                  <Bell className="h-5 w-5" />
-                  {notificationCount > 0 && (
-                    <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-secondary flex items-center justify-center text-[8px] font-bold text-secondary-foreground">
-                      {notificationCount > 9 ? '9+' : notificationCount}
-                    </span>
-                  )}
-                </Button>
-              </Link>
-
+            <div className="flex items-center gap-3 justify-self-end">
               {/* User menu */}
               {user ? (
                 <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
@@ -163,6 +200,7 @@ export function Navigation({ activeSection, onSectionChange, user, onLogout }: N
                       <Settings className="mr-2 h-4 w-4" />
                       <span>Settings</span>
                     </DropdownMenuItem>
+                    {dashboardItems}
                     <Link href="/faq">
                       <DropdownMenuItem className="font-bold text-xs tracking-wide cursor-pointer">
                         <HelpCircle className="mr-2 h-4 w-4" />
@@ -206,9 +244,11 @@ export function Navigation({ activeSection, onSectionChange, user, onLogout }: N
             )
           })}
 
-          <Link
-            href="/notifications"
-            className="flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold tracking-wide text-muted-foreground"
+          <button
+            onClick={() => onSectionChange("notifications")}
+            className={`flex flex-col items-center justify-center gap-0.5 text-[10px] font-bold tracking-wide ${
+              activeSection === "notifications" ? "text-secondary" : "text-muted-foreground"
+            }`}
           >
             <span className="relative">
               <Bell className="h-5 w-5" />
@@ -219,7 +259,7 @@ export function Navigation({ activeSection, onSectionChange, user, onLogout }: N
               )}
             </span>
             Alerts
-          </Link>
+          </button>
 
           <DropdownMenu open={mobileDropdownOpen} onOpenChange={setMobileDropdownOpen}>
             <DropdownMenuTrigger asChild>
@@ -252,6 +292,8 @@ export function Navigation({ activeSection, onSectionChange, user, onLogout }: N
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </DropdownMenuItem>
+
+              {dashboardItems}
 
               <Link href="/faq">
                 <DropdownMenuItem className="font-bold text-xs tracking-wide cursor-pointer">

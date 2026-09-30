@@ -81,8 +81,6 @@ export interface UserProfile {
   role: "student" | "sponsor" | "admin"
   grade?: string // For students
   department?: string // For sponsors
-  profilePicture?: string
-  bio?: string
   interests?: string[]
   userType?: string // From Azure AD - 'None' for teachers/staff
   createdAt: Date

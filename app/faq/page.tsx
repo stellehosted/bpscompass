@@ -17,7 +17,6 @@ import {
   LogIn,
   Flag,
 } from "lucide-react"
-import Link from "next/link"
 
 interface FaqItemProps {
   question: string
@@ -73,9 +72,6 @@ export default function FaqPage() {
         <HelpCircle className="h-8 w-8 text-primary" />
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold">FAQ & Support</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            Answers to common questions about BPS Compass
-          </p>
         </div>
       </div>
 
@@ -95,26 +91,20 @@ export default function FaqPage() {
 
         <FaqItem
           icon={<Crown className="h-5 w-5" />}
-          question="How do I claim a club as its president?"
-          answer="Navigate to the club's page by browsing or searching for it, then tap the 'Claim this Club' button. Once claimed, you'll be able to manage the club's posts, update its description, and manage members."
+          question="How do I claim a club as President?"
+          answer="Navigate to the club's page by browsing or searching for it, then tap the Claim! button. Once claimed, you'll be able to manage the club's posts, update its description, and manage members."
         />
 
         <FaqItem
           icon={<Search className="h-5 w-5" />}
-          question="I can't find my club on this app. How do I add it?"
-          answer="Only administrators can create new clubs on BPS Compass. Please email sunste@berkeleyprep.org with your club's name, a short description, and meeting details. An admin will add it for you."
+          question="How do I add my club to BPS Compass?"
+          answer="Please email sunste@berkeleyprep.org with your club's name, a short description, and meeting details."
         />
 
         <FaqItem
           icon={<Flag className="h-5 w-5" />}
           question="How do I report inappropriate content?"
-          answer="If you see a post or comment that violates community guidelines, email sunste@berkeleyprep.org with a description of the content and where you found it. Administrators can review and remove posts as needed."
-        />
-
-        <FaqItem
-          icon={<LogIn className="h-5 w-5" />}
-          question="I'm having trouble logging in. What should I do?"
-          answer="Make sure you're using your BPS email address to sign in. If issues persist, try clearing your browser cache and reloading the page. Still stuck? Email sunste@berkeleyprep.org for help."
+          answer="If you see a post or comment that violates community guidelines, email sunste@berkeleyprep.org with a description of the content and where you found it."
         />
       </div>
 
@@ -125,18 +115,17 @@ export default function FaqPage() {
             <div className="rounded-full bg-purple-100 dark:bg-purple-900 p-3 shrink-0">
               <Mail className="h-6 w-6 text-purple-600 dark:text-purple-400" />
             </div>
-            <div className="space-y-1">
-              <h3 className="font-semibold text-base">Still need help?</h3>
+            <div className="space-y-0">
+              <h3 className="font-semibold text-base">Need help?</h3>
               <p className="text-sm text-muted-foreground">
-                For questions, bug reports, or anything not covered above, reach out to the admin team.
-              </p>
+                For feedback, questions, bug reports, or anything else, reach out to
               <a
                 href="mailto:sunste@berkeleyprep.org"
                 className="inline-flex items-center gap-2 mt-2 text-sm font-medium text-purple-600 dark:text-purple-400 hover:underline"
               >
-                <Mail className="h-4 w-4" />
-                sunste@berkeleyprep.org
+               sunste@berkeleyprep.org
               </a>
+              </p>
             </div>
           </div>
         </CardContent>

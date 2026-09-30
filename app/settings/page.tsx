@@ -198,52 +198,6 @@ export default function SettingsPage() {
             </div>
           </div>
 
-          {user.bio && (
-            <div className="pt-4 border-t">
-              <p className="text-sm text-muted-foreground mb-2">Bio</p>
-              <p className="text-sm">{user.bio}</p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Quick Actions */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <Link href="/notifications">
-            <Button variant="outline" className="w-full justify-start">
-              <Bell className="h-4 w-4 mr-2" />
-              Notifications & Preferences
-            </Button>
-          </Link>
-
-          {stats?.isSponsor && (
-            <Link href="/sponsor">
-              <Button variant="outline" className="w-full justify-start">
-                <Shield className="h-4 w-4 mr-2" />
-                Sponsor Dashboard
-              </Button>
-            </Link>
-          )}
-
-          {stats?.isCoordinator && (
-            <Link href="/admin">
-              <Button variant="outline" className="w-full justify-start">
-                <SettingsIcon className="h-4 w-4 mr-2" />
-                Admin Dashboard
-              </Button>
-            </Link>
-          )}
-
-          <Link href="/faq">
-            <Button variant="outline" className="w-full justify-start">
-              <HelpCircle className="h-4 w-4 mr-2" />
-              FAQ & Support
-            </Button>
-          </Link>
         </CardContent>
       </Card>
 

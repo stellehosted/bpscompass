@@ -48,14 +48,12 @@ interface ClubMember {
   joined_at: string
   name: string
   email: string
-  avatar_url: string | null
 }
 
 interface President {
   id: string
   name: string
   email: string
-  avatar_url: string | null
   joined_at: string
 }
 
@@ -63,7 +61,6 @@ interface Sponsor {
   id: string
   name: string
   email: string
-  avatar_url: string | null
 }
 
 interface Club {
@@ -79,7 +76,6 @@ interface Club {
   is_sponsor: boolean
   permissions: Permission[]
   president_name: string | null
-  president_avatar: string | null
   president_email: string | null
   presidents: President[]
   sponsors: Sponsor[]
@@ -154,7 +150,7 @@ export function ClubDetailPage({ clubId }: { clubId: string }) {
   }, [loadClubDetails])
 
   const handleSectionChange = useCallback(
-    (section: "home" | "clubs") => router.push(section === "home" ? "/" : "/?section=clubs"),
+    (section: "home" | "clubs" | "notifications") => router.push(section === "home" ? "/" : `/?section=${section}`),
     [router]
   )
 
@@ -345,8 +341,6 @@ export function ClubDetailPage({ clubId }: { clubId: string }) {
           userRole={user.role}
           userGrade={user.grade}
           userDepartment={user.department}
-          userBio={user.bio}
-          userAvatar={user.profilePicture}
           onClaimSuccess={loadClubDetails}
           trigger={<Button className={LEAVE_BUTTON}>Claim!</Button>}
         />

@@ -5,24 +5,26 @@ import { useSearchParams, useRouter } from "next/navigation"
 import { Navigation } from "@/components/navigation"
 import { HomeContent } from "@/components/homePage"
 import { ClubsContent } from "@/components/clubsPage"
+import { NotificationsContent } from "@/components/notificationsPage"
 import { useAuth } from "@/contexts/auth-context"
 import { ProfileCreation } from "@/components/profileCreation"
 import { LoginScreen } from "@/components/loginPage"
 
-type ActiveSection = "home" | "clubs"
+type ActiveSection = "home" | "clubs" | "notifications"
+
+const parseSection = (value: string | null): ActiveSection =>
+  value === "clubs" || value === "notifications" ? value : "home"
 
 function MainLayoutContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
   // Start from the URL so coming back to ?section=clubs doesn't flash the Home tab first
-  const [activeSection, setActiveSection] = useState<ActiveSection>(
-    searchParams.get("section") === "clubs" ? "clubs" : "home"
-  )
+  const [activeSection, setActiveSection] = useState<ActiveSection>(parseSection(searchParams.get("section")))
   const { user, isAuthenticated, isLoading, hasProfile, logout } = useAuth()
 
   // Read section from URL on mount
   useEffect(() => {
-    setActiveSection(searchParams.get("section") === "clubs" ? "clubs" : "home")
+    setActiveSection(parseSection(searchParams.get("section")))
   }, [searchParams])
 
   // Show loading state
@@ -54,6 +56,8 @@ function MainLayoutContent() {
         return <HomeContent />
       case "clubs":
         return <ClubsContent />
+      case "notifications":
+        return <NotificationsContent />
       default:
         return <HomeContent />
     }

@@ -10,29 +10,25 @@ export class UserRepository {
     const {
       email,
       name,
-      avatarUrl,
       role = 'student',
       grade,
       department,
-      bio
     } = userData
 
     try {
       // Note: We intentionally do NOT update role on conflict - role should only be set
       // on initial user creation or via explicit admin action, not overwritten on login
       const result = await query(
-        `INSERT INTO users (email, name, avatar_url, role, grade, department, bio, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+        `INSERT INTO users (email, name, role, grade, department, updated_at)
+         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
          ON CONFLICT (email)
          DO UPDATE SET
            name = EXCLUDED.name,
-           avatar_url = EXCLUDED.avatar_url,
            grade = EXCLUDED.grade,
            department = EXCLUDED.department,
-           bio = EXCLUDED.bio,
            updated_at = CURRENT_TIMESTAMP
-         RETURNING id, email, name, avatar_url, role, grade, department, bio, created_at, updated_at`,
-        [email, name, avatarUrl, role, grade, department, bio]
+         RETURNING id, email, name, role, grade, department, created_at, updated_at`,
+        [email, name, role, grade, department]
       )
 
       if (result.rows.length === 0) {
@@ -52,7 +48,7 @@ export class UserRepository {
   async findByEmail(email: string): Promise<DatabaseUser | null> {
     try {
       const result = await query(
-        'SELECT id, email, name, avatar_url, role, grade, department, bio, created_at, updated_at FROM users WHERE email = $1',
+        'SELECT id, email, name, role, grade, department, created_at, updated_at FROM users WHERE email = $1',
         [email]
       )
 
@@ -73,7 +69,7 @@ export class UserRepository {
   async findById(id: string): Promise<DatabaseUser | null> {
     try {
       const result = await query(
-        'SELECT id, email, name, avatar_url, role, grade, department, bio, created_at, updated_at FROM users WHERE id = $1',
+        'SELECT id, email, name, role, grade, department, created_at, updated_at FROM users WHERE id = $1',
         [id]
       )
 
@@ -101,10 +97,6 @@ export class UserRepository {
       updateFields.push(`name = $${paramIndex++}`)
       values.push(updateData.name)
     }
-    if (updateData.avatarUrl !== undefined) {
-      updateFields.push(`avatar_url = $${paramIndex++}`)
-      values.push(updateData.avatarUrl)
-    }
     if (updateData.role !== undefined) {
       updateFields.push(`role = $${paramIndex++}`)
       values.push(updateData.role)
@@ -116,10 +108,6 @@ export class UserRepository {
     if (updateData.department !== undefined) {
       updateFields.push(`department = $${paramIndex++}`)
       values.push(updateData.department)
-    }
-    if (updateData.bio !== undefined) {
-      updateFields.push(`bio = $${paramIndex++}`)
-      values.push(updateData.bio)
     }
 
     if (updateFields.length === 0) {
@@ -134,7 +122,7 @@ export class UserRepository {
       const result = await query(
         `UPDATE users SET ${updateFields.join(', ')} 
          WHERE id = $${paramIndex}
-         RETURNING id, email, name, avatar_url, role, grade, department, bio, created_at, updated_at`,
+         RETURNING id, email, name, role, grade, department, created_at, updated_at`,
         values
       )
 
@@ -168,11 +156,9 @@ export class UserRepository {
       id: row.id,
       email: row.email,
       name: row.name,
-      avatarUrl: row.avatar_url,
       role: row.role,
       grade: row.grade,
       department: row.department,
-      bio: row.bio,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at)
     }
@@ -191,28 +177,24 @@ class TransactionUserRepository extends UserRepository {
     const {
       email,
       name,
-      avatarUrl,
       role = 'student',
       grade,
       department,
-      bio
     } = userData
 
     try {
       const result = await this.client.query(
-        `INSERT INTO users (email, name, avatar_url, role, grade, department, bio, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+        `INSERT INTO users (email, name, role, grade, department, updated_at)
+         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
          ON CONFLICT (email) 
          DO UPDATE SET 
            name = EXCLUDED.name,
-           avatar_url = EXCLUDED.avatar_url,
            role = EXCLUDED.role,
            grade = EXCLUDED.grade,
            department = EXCLUDED.department,
-           bio = EXCLUDED.bio,
            updated_at = CURRENT_TIMESTAMP
-         RETURNING id, email, name, avatar_url, role, grade, department, bio, created_at, updated_at`,
-        [email, name, avatarUrl, role, grade, department, bio]
+         RETURNING id, email, name, role, grade, department, created_at, updated_at`,
+        [email, name, role, grade, department]
       )
 
       if (result.rows.length === 0) {
@@ -229,7 +211,7 @@ class TransactionUserRepository extends UserRepository {
   async findByEmail(email: string): Promise<DatabaseUser | null> {
     try {
       const result = await this.client.query(
-        'SELECT id, email, name, avatar_url, role, grade, department, bio, created_at, updated_at FROM users WHERE email = $1',
+        'SELECT id, email, name, role, grade, department, created_at, updated_at FROM users WHERE email = $1',
         [email]
       )
 
@@ -247,7 +229,7 @@ class TransactionUserRepository extends UserRepository {
   async findById(id: string): Promise<DatabaseUser | null> {
     try {
       const result = await this.client.query(
-        'SELECT id, email, name, avatar_url, role, grade, department, bio, created_at, updated_at FROM users WHERE id = $1',
+        'SELECT id, email, name, role, grade, department, created_at, updated_at FROM users WHERE id = $1',
         [id]
       )
 

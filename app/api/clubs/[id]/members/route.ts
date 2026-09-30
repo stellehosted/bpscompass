@@ -17,7 +17,6 @@ export async function GET(
         cm.joined_at,
         u.name,
         u.email,
-        u.avatar_url
       FROM club_members cm
       JOIN users u ON cm.user_id = u.id
       WHERE cm.club_id = $1

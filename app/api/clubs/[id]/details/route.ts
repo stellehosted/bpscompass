@@ -18,7 +18,6 @@ export async function GET(
       SELECT 
         c.*,
         u.name as president_name,
-        u.avatar_url as president_avatar,
         u.email as president_email
       FROM clubs c
       LEFT JOIN users u ON c.president_id = u.id
@@ -42,7 +41,6 @@ export async function GET(
         u.id,
         u.name,
         u.email,
-        u.avatar_url,
         cm.joined_at
       FROM club_members cm
       JOIN users u ON cm.user_id = u.id
@@ -58,7 +56,6 @@ export async function GET(
         u.id,
         u.name,
         u.email,
-        u.avatar_url
       FROM club_sponsors cs
       JOIN users u ON cs.user_id = u.id
       WHERE cs.club_id = $1 AND cs.status = 'active'
@@ -91,7 +88,6 @@ export async function GET(
           cm.joined_at,
           u.name,
           u.email,
-          u.avatar_url
         FROM club_members cm
         JOIN users u ON cm.user_id = u.id
         WHERE cm.club_id = $1
@@ -103,7 +99,6 @@ export async function GET(
           cs.assigned_at as joined_at,
           u.name,
           u.email,
-          u.avatar_url
         FROM club_sponsors cs
         JOIN users u ON cs.user_id = u.id
         WHERE cs.club_id = $1 AND cs.status = 'active'
@@ -137,7 +132,6 @@ export async function GET(
           p.created_at,
           p.user_id as author_id,
           u.name as author_name,
-          u.avatar_url as author_avatar,
           u.email as author_email,
           c.name as club_name,
           c.image_url as club_avatar
@@ -146,7 +140,7 @@ export async function GET(
         JOIN clubs c ON p.club_id = c.id
         LEFT JOIN post_likes pl ON p.id = pl.post_id
         WHERE p.club_id = $1
-        GROUP BY p.id, u.id, u.name, u.avatar_url, u.email, c.name, c.image_url
+        GROUP BY p.id, u.id, u.name, u.email, c.name, c.image_url
         ORDER BY p.created_at DESC
         LIMIT 20
       `

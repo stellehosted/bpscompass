@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Checkbox } from "@/components/ui/checkbox"
 import { PostCard } from "@/components/postCard"
+import { Logo } from "@/components/logo"
 import {
   Dialog,
   DialogContent,
@@ -80,7 +81,7 @@ export default function ComponentGalleryPage() {
           kept in reserve for near-term features.
         </p>
 
-        <Section title="Button">
+        <Section title="button.tsx">
           <Button>Default</Button>
           <Button variant="secondary">Secondary</Button>
           <Button variant="outline">Outline</Button>
@@ -91,7 +92,7 @@ export default function ComponentGalleryPage() {
           <Button size="lg">Large</Button>
         </Section>
 
-        <Section title="Badge">
+        <Section title="badge.tsx">
           <Badge>Default</Badge>
           <Badge variant="secondary">Secondary</Badge>
           <Badge variant="destructive">Destructive</Badge>
@@ -99,7 +100,12 @@ export default function ComponentGalleryPage() {
           <Badge variant="muted">Muted</Badge>
         </Section>
 
-        <Section title="Card">
+        <Section title="logo.tsx">
+          <Logo className="size-24" />
+          <Logo className="size-10" />
+        </Section>
+
+        <Section title="card.tsx">
           <Card className="w-72">
             <CardHeader>
               <CardTitle>Card title</CardTitle>
@@ -114,7 +120,7 @@ export default function ComponentGalleryPage() {
           </Card>
         </Section>
 
-        <Section title="Post Card">
+        <Section title="postCard.tsx">
           <div className="w-[500px]">
             <PostCard
               post={{
@@ -124,7 +130,6 @@ export default function ComponentGalleryPage() {
                 club_avatar: "/icon-512.png",
                 title: "GOAT and Hoppers",
                 author_name: "Leila DiPiazza",
-                author_avatar: null,
                 author_email: "leila@example.com",
                 content:
                   "Hey everyone, we still have club today in G116! I'll be putting on two different animated movie trailers: GOAT and Hoppers! I think they're both pretty cool, and we can talk about if one seems more compelling than the other due to the animation :)\n\nhope to see you all there!\n-Sequential Arts Club",
@@ -139,7 +144,7 @@ export default function ComponentGalleryPage() {
           </div>
         </Section>
 
-        <Section title="Alert">
+        <Section title="alert.tsx">
           <Alert className="w-96">
             <AlertTitle>Heads up</AlertTitle>
             <AlertDescription>This is a standard alert message.</AlertDescription>
@@ -150,7 +155,7 @@ export default function ComponentGalleryPage() {
           </Alert>
         </Section>
 
-        <Section title="Input / Textarea / Label">
+        <Section title="input.tsx / textarea.tsx / label.tsx">
           <div className="grid w-64 gap-1.5">
             <Label htmlFor="gallery-input">Email</Label>
             <Input id="gallery-input" placeholder="you@school.edu" />
@@ -161,7 +166,7 @@ export default function ComponentGalleryPage() {
           </div>
         </Section>
 
-        <Section title="Checkbox / Switch / Radio Group">
+        <Section title="checkbox.tsx / switch.tsx / radio-group.tsx">
           <div className="flex items-center gap-2">
             <Checkbox id="gallery-checkbox" />
             <Label htmlFor="gallery-checkbox">Accept terms</Label>
@@ -182,14 +187,14 @@ export default function ComponentGalleryPage() {
           </RadioGroup>
         </Section>
 
-        <Section title="Slider">
+        <Section title="slider.tsx">
           <div className="w-64 space-y-2">
             <Slider value={sliderValue} onValueChange={setSliderValue} max={100} step={1} />
             <p className="text-sm text-muted-foreground">{sliderValue[0]}%</p>
           </div>
         </Section>
 
-        <Section title="Select">
+        <Section title="select.tsx">
           <Select defaultValue="clubs">
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Choose a page" />
@@ -202,7 +207,7 @@ export default function ComponentGalleryPage() {
           </Select>
         </Section>
 
-        <Section title="Tabs">
+        <Section title="tabs.tsx">
           <Tabs defaultValue="tab1" className="w-72">
             <TabsList>
               <TabsTrigger value="tab1">Tab One</TabsTrigger>
@@ -213,7 +218,7 @@ export default function ComponentGalleryPage() {
           </Tabs>
         </Section>
 
-        <Section title="Dialog / Alert Dialog / Sheet">
+        <Section title="dialog.tsx / alert-dialog.tsx / sheet.tsx">
           <Dialog>
             <DialogTrigger asChild>
               <Button variant="outline">Open Dialog</Button>
@@ -252,7 +257,7 @@ export default function ComponentGalleryPage() {
           </Sheet>
         </Section>
 
-        <Section title="Dropdown Menu">
+        <Section title="dropdown-menu.tsx">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">Open Menu</Button>
@@ -266,7 +271,7 @@ export default function ComponentGalleryPage() {
           </DropdownMenu>
         </Section>
 
-        <Section title="Tooltip">
+        <Section title="tooltip.tsx">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="outline">Tooltip target</Button>
@@ -275,7 +280,7 @@ export default function ComponentGalleryPage() {
           </Tooltip>
         </Section>
 
-        <Section title="Toast">
+        <Section title="toast.tsx">
           <Button
             variant="outline"
             onClick={() =>
@@ -286,18 +291,20 @@ export default function ComponentGalleryPage() {
           </Button>
         </Section>
 
-        <Section title="Skeleton / Separator / Scroll Area">
+        <Section title="skeleton.tsx / separator.tsx / scroll-area.tsx">
           <div className="w-48 space-y-2">
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-3/4" />
           </div>
           <Separator orientation="vertical" className="h-10" />
-          <ScrollArea className="h-24 w-48 rounded-sm ring-1 ring-border/50 p-2">
-            {Array.from({ length: 10 }).map((_, i) => (
-              <p key={i} className="text-sm">
-                Scrollable line {i + 1}
-              </p>
-            ))}
+          <ScrollArea className="h-24 w-48">
+            <div className="px-4 py-3">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <p key={i} className="text-sm">
+                  Scrollable line {i + 1}
+                </p>
+              ))}
+            </div>
           </ScrollArea>
         </Section>
       </div>

@@ -19,7 +19,6 @@ export function ProfileCreation() {
     role: "student" as "student" | "sponsor" | "admin",
     grade: "",
     department: "",
-    bio: "",
     interests: [] as string[],
   })
   const [newInterest, setNewInterest] = useState("")
@@ -131,21 +130,6 @@ export function ProfileCreation() {
                 />
               </div>
             )}
-
-            {/* Bio */}
-            <div className="space-y-1.5 sm:space-y-2">
-              <Label htmlFor="bio" className="text-sm">Bio (Optional):</Label>
-              <Textarea
-                id="bio"
-                placeholder="Tell us a bit about yourself..."
-                value={formData.bio}
-                onChange={(e) =>
-                  setFormData(prev => ({ ...prev, bio: e.target.value }))
-                }
-                rows={3}
-                className="text-sm"
-              />
-            </div>
 
             {/* Interests */}
             <div className="space-y-1.5 sm:space-y-2">

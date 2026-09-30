@@ -12,11 +12,9 @@ export class UserRepository {
     const {
       email,
       name,
-      avatarUrl,
       role = 'student',
       grade,
       department,
-      bio
     } = userData
 
     // SECURITY: Validate and sanitize all inputs
@@ -42,43 +40,25 @@ export class UserRepository {
       }
     }
 
-    if (avatarUrl) {
-      const urlValidation = validateUrl(avatarUrl)
-      if (!urlValidation.valid) {
-        throw new Error(`Invalid avatar URL: ${urlValidation.error}`)
-      }
-    }
-
-    if (bio) {
-      const bioValidation = validateTextContent(bio, 0, 500)
-      if (!bioValidation.valid) {
-        throw new Error(`Invalid bio: ${bioValidation.error}`)
-      }
-    }
-
     try {
       // SECURITY: Using parameterized queries to prevent SQL injection
       const result = await query(
-        `INSERT INTO users (email, name, avatar_url, role, grade, department, bio, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+        `INSERT INTO users (email, name, role, grade, department, updated_at)
+         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
          ON CONFLICT (email) 
          DO UPDATE SET 
            name = EXCLUDED.name,
-           avatar_url = EXCLUDED.avatar_url,
            role = EXCLUDED.role,
            grade = EXCLUDED.grade,
            department = EXCLUDED.department,
-           bio = EXCLUDED.bio,
            updated_at = CURRENT_TIMESTAMP
-         RETURNING id, email, name, avatar_url, role, grade, department, bio, created_at, updated_at`,
+         RETURNING id, email, name, role, grade, department, created_at, updated_at`,
         [
           emailValidation.sanitized,
           nameValidation.sanitized,
-          avatarUrl || null,
           roleValidation.sanitized,
           grade || null,
           department || null,
-          bio || null
         ]
       )
 
@@ -106,7 +86,7 @@ export class UserRepository {
     try {
       // SECURITY: Using parameterized query
       const result = await query(
-        'SELECT id, email, name, avatar_url, role, grade, department, bio, created_at, updated_at FROM users WHERE email = $1',
+        'SELECT id, email, name, role, grade, department, created_at, updated_at FROM users WHERE email = $1',
         [emailValidation.sanitized]
       )
 
@@ -129,7 +109,7 @@ export class UserRepository {
     try {
       // SECURITY: Using parameterized query
       const result = await query(
-        'SELECT id, email, name, avatar_url, role, grade, department, bio, created_at, updated_at FROM users WHERE id = $1',
+        'SELECT id, email, name, role, grade, department, created_at, updated_at FROM users WHERE id = $1',
         [id]
       )
 
@@ -161,20 +141,6 @@ export class UserRepository {
       }
       updateFields.push(`name = $${paramIndex++}`)
       values.push(nameValidation.sanitized)
-    }
-
-    if (updateData.avatarUrl !== undefined) {
-      if (updateData.avatarUrl) {
-        const urlValidation = validateUrl(updateData.avatarUrl)
-        if (!urlValidation.valid) {
-          throw new Error(`Invalid avatar URL: ${urlValidation.error}`)
-        }
-        updateFields.push(`avatar_url = $${paramIndex++}`)
-        values.push(urlValidation.sanitized)
-      } else {
-        updateFields.push(`avatar_url = $${paramIndex++}`)
-        values.push(null)
-      }
     }
 
     if (updateData.role !== undefined) {
@@ -214,20 +180,6 @@ export class UserRepository {
       }
     }
 
-    if (updateData.bio !== undefined) {
-      if (updateData.bio) {
-        const bioValidation = validateTextContent(updateData.bio, 0, 500)
-        if (!bioValidation.valid) {
-          throw new Error(`Invalid bio: ${bioValidation.error}`)
-        }
-        updateFields.push(`bio = $${paramIndex++}`)
-        values.push(bioValidation.sanitized)
-      } else {
-        updateFields.push(`bio = $${paramIndex++}`)
-        values.push(null)
-      }
-    }
-
     if (updateFields.length === 0) {
       throw new Error('No fields provided for update')
     }
@@ -241,7 +193,7 @@ export class UserRepository {
       const result = await query(
         `UPDATE users SET ${updateFields.join(', ')} 
          WHERE id = $${paramIndex}
-         RETURNING id, email, name, avatar_url, role, grade, department, bio, created_at, updated_at`,
+         RETURNING id, email, name, role, grade, department, created_at, updated_at`,
         values
       )
 
@@ -274,11 +226,9 @@ export class UserRepository {
       id: row.id,
       email: row.email,
       name: row.name,
-      avatarUrl: row.avatar_url,
       role: row.role,
       grade: row.grade,
       department: row.department,
-      bio: row.bio,
       createdAt: new Date(row.created_at),
       updatedAt: new Date(row.updated_at)
     }
@@ -297,11 +247,9 @@ class TransactionUserRepository extends UserRepository {
     const {
       email,
       name,
-      avatarUrl,
       role = 'student',
       grade,
       department,
-      bio
     } = userData
 
     // SECURITY: Validate all inputs
@@ -317,19 +265,17 @@ class TransactionUserRepository extends UserRepository {
 
     try {
       const result = await this.client.query(
-        `INSERT INTO users (email, name, avatar_url, role, grade, department, bio, updated_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP)
+        `INSERT INTO users (email, name, role, grade, department, updated_at)
+         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
          ON CONFLICT (email) 
          DO UPDATE SET 
            name = EXCLUDED.name,
-           avatar_url = EXCLUDED.avatar_url,
            role = EXCLUDED.role,
            grade = EXCLUDED.grade,
            department = EXCLUDED.department,
-           bio = EXCLUDED.bio,
            updated_at = CURRENT_TIMESTAMP
-         RETURNING id, email, name, avatar_url, role, grade, department, bio, created_at, updated_at`,
-        [emailValidation.sanitized, nameValidation.sanitized, avatarUrl, role, grade, department, bio]
+         RETURNING id, email, name, role, grade, department, created_at, updated_at`,
+        [emailValidation.sanitized, nameValidation.sanitized, role, grade, department]
       )
 
       if (result.rows.length === 0) {
@@ -351,7 +297,7 @@ class TransactionUserRepository extends UserRepository {
 
     try {
       const result = await this.client.query(
-        'SELECT id, email, name, avatar_url, role, grade, department, bio, created_at, updated_at FROM users WHERE email = $1',
+        'SELECT id, email, name, role, grade, department, created_at, updated_at FROM users WHERE email = $1',
         [emailValidation.sanitized]
       )
 
@@ -369,7 +315,7 @@ class TransactionUserRepository extends UserRepository {
   async findById(id: string): Promise<DatabaseUser | null> {
     try {
       const result = await this.client.query(
-        'SELECT id, email, name, avatar_url, role, grade, department, bio, created_at, updated_at FROM users WHERE id = $1',
+        'SELECT id, email, name, role, grade, department, created_at, updated_at FROM users WHERE id = $1',
         [id]
       )
 

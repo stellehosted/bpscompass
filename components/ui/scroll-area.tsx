@@ -13,7 +13,7 @@ function ScrollArea({
   return (
     <ScrollAreaPrimitive.Root
       data-slot="scroll-area"
-      className={cn("relative rounded-[16px]", className)}
+      className={cn("relative rounded-[16px] bg-white "+"shadow-hard", className)}
       {...props}
     >
       <ScrollAreaPrimitive.Viewport

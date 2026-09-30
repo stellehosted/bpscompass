@@ -14,7 +14,6 @@ export async function GET(request: NextRequest) {
       SELECT 
         c.*,
         u.name as president_name,
-        u.avatar_url as president_avatar,
         u.email as president_email,
         COUNT(DISTINCT cm.id) as member_count,
         COALESCE(

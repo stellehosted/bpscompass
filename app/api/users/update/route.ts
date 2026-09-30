@@ -5,7 +5,7 @@ import pool from '@/lib/db'
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, name, role, grade, department, profilePicture, bio } = body
+    const { id, name, role, grade, department } = body
 
     if (!id) {
       return NextResponse.json(
@@ -35,14 +35,6 @@ export async function PUT(request: NextRequest) {
       updateFields.push(`department = $${paramIndex++}`)
       values.push(department)
     }
-    if (profilePicture !== undefined) {
-      updateFields.push(`avatar_url = $${paramIndex++}`)
-      values.push(profilePicture)
-    }
-    if (bio !== undefined) {
-      updateFields.push(`bio = $${paramIndex++}`)
-      values.push(bio)
-    }
 
     if (updateFields.length === 0) {
       return NextResponse.json(
@@ -58,7 +50,7 @@ export async function PUT(request: NextRequest) {
     const result = await pool.query(
       `UPDATE users SET ${updateFields.join(', ')} 
        WHERE id = $${paramIndex}
-       RETURNING id, email, name, avatar_url, role, grade, department, bio, created_at, updated_at`,
+       RETURNING id, email, name, role, grade, department, created_at, updated_at`,
       values
     )
 

@@ -132,11 +132,6 @@ export class UserService {
       throw new Error('Name must be 255 characters or less')
     }
 
-    // Validate avatar URL if provided
-    if (userData.avatarUrl && !this.isValidUrl(userData.avatarUrl)) {
-      throw new Error('Invalid avatar URL format')
-    }
-
     // Validate grade if provided
     if (userData.grade && userData.grade.length > 20) {
       throw new Error('Grade must be 20 characters or less')
@@ -145,11 +140,6 @@ export class UserService {
     // Validate department if provided
     if (userData.department && userData.department.length > 100) {
       throw new Error('Department must be 100 characters or less')
-    }
-
-    // Validate bio if provided
-    if (userData.bio && userData.bio.length > 1000) {
-      throw new Error('Bio must be 1000 characters or less')
     }
   }
 
@@ -172,11 +162,6 @@ export class UserService {
       throw new Error('Invalid role. Must be student, sponsor, or admin')
     }
 
-    // Validate avatar URL if provided
-    if (updateData.avatarUrl !== undefined && updateData.avatarUrl && !this.isValidUrl(updateData.avatarUrl)) {
-      throw new Error('Invalid avatar URL format')
-    }
-
     // Validate grade if provided
     if (updateData.grade !== undefined && updateData.grade && updateData.grade.length > 20) {
       throw new Error('Grade must be 20 characters or less')
@@ -185,11 +170,6 @@ export class UserService {
     // Validate department if provided
     if (updateData.department !== undefined && updateData.department && updateData.department.length > 100) {
       throw new Error('Department must be 100 characters or less')
-    }
-
-    // Validate bio if provided
-    if (updateData.bio !== undefined && updateData.bio && updateData.bio.length > 1000) {
-      throw new Error('Bio must be 1000 characters or less')
     }
   }
 

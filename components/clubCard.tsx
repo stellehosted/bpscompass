@@ -176,8 +176,6 @@ export function ClubCard({ club, onJoinLeave, onLeaveSponsor, onChanged, showEdi
           userRole={user.role}
           userGrade={user.grade}
           userDepartment={user.department}
-          userBio={user.bio}
-          userAvatar={user.profilePicture}
           onClaimSuccess={onChanged}
           trigger={<Button className={PRIMARY_BUTTON}>Claim!</Button>}
         />

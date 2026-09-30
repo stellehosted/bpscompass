@@ -22,8 +22,6 @@ interface ClaimClubDialogProps {
   userRole?: string
   userGrade?: string
   userDepartment?: string
-  userBio?: string
-  userAvatar?: string
   onClaimSuccess: () => void
   // Replaces the default "Claim Club" button, e.g. the club card's primary button.
   trigger?: React.ReactNode
@@ -38,8 +36,6 @@ export function ClaimClubDialog({
   userRole, 
   userGrade, 
   userDepartment, 
-  userBio, 
-  userAvatar, 
   trigger,
   onClaimSuccess 
 }: ClaimClubDialogProps) {
@@ -67,8 +63,6 @@ export function ClaimClubDialog({
           userRole,
           userGrade,
           userDepartment,
-          userBio,
-          userAvatar,
         }),
       })
 

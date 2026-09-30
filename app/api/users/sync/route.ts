@@ -6,7 +6,7 @@ import { randomUUID } from 'crypto'
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { id, email, name, role, grade, department, bio, profilePicture, userType } = body
+    const { id, email, name, role, grade, department, userType } = body
 
     if (!email || !name) {
       return NextResponse.json(
@@ -17,20 +17,18 @@ export async function POST(request: NextRequest) {
 
     // Use email-based upsert for simplicity
     const result = await pool.query(
-      `INSERT INTO users (id, email, name, role, grade, department, bio, avatar_url, user_type, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+      `INSERT INTO users (id, email, name, role, grade, department, user_type, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
        ON CONFLICT (email) 
        DO UPDATE SET 
          name = EXCLUDED.name,
          role = COALESCE(EXCLUDED.role, users.role),
          grade = COALESCE(EXCLUDED.grade, users.grade),
          department = COALESCE(EXCLUDED.department, users.department),
-         bio = COALESCE(EXCLUDED.bio, users.bio),
-         avatar_url = COALESCE(EXCLUDED.avatar_url, users.avatar_url),
          user_type = COALESCE(EXCLUDED.user_type, users.user_type),
          updated_at = CURRENT_TIMESTAMP
        RETURNING id, email, name`,
-      [id || randomUUID(), email, name, role || 'student', grade, department, bio, profilePicture, userType || null]
+      [id || randomUUID(), email, name, role || 'student', grade, department, userType || null]
     )
     
     return NextResponse.json({

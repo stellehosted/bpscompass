@@ -111,7 +111,6 @@ export async function GET(
         requester.email as requester_email,
         target.name as target_name,
         target.email as target_email,
-        target.avatar_url as target_avatar
       FROM leadership_requests lr
       JOIN users requester ON lr.requested_by = requester.id
       JOIN users target ON lr.target_user_id = target.id

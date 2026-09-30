@@ -18,14 +18,13 @@ export async function GET(
       SELECT 
         p.*,
         u.name as author_name,
-        u.avatar_url as author_avatar,
         u.email as author_email,
         COUNT(DISTINCT pl.id)::int as likes_count
       FROM posts p
       JOIN users u ON p.user_id = u.id
       LEFT JOIN post_likes pl ON p.id = pl.post_id
       WHERE p.club_id = $1
-      GROUP BY p.id, u.id, u.name, u.avatar_url, u.email
+      GROUP BY p.id, u.id, u.name, u.email
       ORDER BY p.created_at DESC
     `
 
@@ -144,14 +143,13 @@ export async function POST(
     ])
 
     // Get author info
-    const authorQuery = 'SELECT name, avatar_url, email FROM users WHERE id = $1'
+    const authorQuery = 'SELECT name, email FROM users WHERE id = $1'
     const authorResult = await pool.query(authorQuery, [userId])
     const author = authorResult.rows[0]
 
     const post = {
       ...result.rows[0],
       author_name: author.name,
-      author_avatar: author.avatar_url,
       author_email: author.email,
       isLiked: false,
     }

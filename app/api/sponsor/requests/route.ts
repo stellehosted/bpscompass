@@ -30,10 +30,8 @@ export async function GET(request: NextRequest) {
           c.image_url as club_image,
           requester.name as requester_name,
           requester.email as requester_email,
-          requester.avatar_url as requester_avatar,
           target.name as target_name,
-          target.email as target_email,
-          target.avatar_url as target_avatar
+          target.email as target_email
         FROM leadership_requests lr
         JOIN clubs c ON lr.club_id = c.id
         JOIN users requester ON lr.requested_by = requester.id
@@ -50,10 +48,8 @@ export async function GET(request: NextRequest) {
           c.image_url as club_image,
           requester.name as requester_name,
           requester.email as requester_email,
-          requester.avatar_url as requester_avatar,
           target.name as target_name,
-          target.email as target_email,
-          target.avatar_url as target_avatar
+          target.email as target_email
         FROM leadership_requests lr
         JOIN clubs c ON lr.club_id = c.id
         JOIN club_sponsors cs ON c.id = cs.club_id

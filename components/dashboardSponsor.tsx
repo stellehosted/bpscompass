@@ -24,7 +24,6 @@ interface LeadershipRequest {
   action_type: string
   target_name: string
   target_email: string
-  target_avatar: string | null
   requester_name: string
   created_at: string
 }
