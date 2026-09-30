@@ -110,7 +110,7 @@ export async function GET(
         requester.name as requester_name,
         requester.email as requester_email,
         target.name as target_name,
-        target.email as target_email,
+        target.email as target_email
       FROM leadership_requests lr
       JOIN users requester ON lr.requested_by = requester.id
       JOIN users target ON lr.target_user_id = target.id

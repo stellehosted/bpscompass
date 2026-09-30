@@ -55,7 +55,7 @@ export async function GET(
       SELECT 
         u.id,
         u.name,
-        u.email,
+        u.email
       FROM club_sponsors cs
       JOIN users u ON cs.user_id = u.id
       WHERE cs.club_id = $1 AND cs.status = 'active'
@@ -87,7 +87,7 @@ export async function GET(
           cm.role,
           cm.joined_at,
           u.name,
-          u.email,
+          u.email
         FROM club_members cm
         JOIN users u ON cm.user_id = u.id
         WHERE cm.club_id = $1
@@ -98,7 +98,7 @@ export async function GET(
           'sponsor'::text as role,
           cs.assigned_at as joined_at,
           u.name,
-          u.email,
+          u.email
         FROM club_sponsors cs
         JOIN users u ON cs.user_id = u.id
         WHERE cs.club_id = $1 AND cs.status = 'active'
