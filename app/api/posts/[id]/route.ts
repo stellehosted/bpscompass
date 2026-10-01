@@ -44,8 +44,8 @@ export async function DELETE(
       )
     }
 
-    // Delete associated image from storage if it exists
-    if (post.image_url) {
+    // Delete associated image from storage if it exists (skipped when Supabase isn't configured)
+    if (post.image_url && supabase) {
       try {
         // Extract filename from URL
         // URL format: https://[project].supabase.co/storage/v1/object/public/club-images/[filename]

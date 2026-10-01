@@ -15,6 +15,13 @@ async function uploadHandler(request: NextRequest) {
       )
     }
 
+    if (!supabase) {
+      return NextResponse.json(
+        { success: false, error: 'Image storage is not configured (set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY)' },
+        { status: 503 }
+      )
+    }
+
     // Validate file type
     if (!file.type.startsWith('image/')) {
       return NextResponse.json(

@@ -27,6 +27,13 @@ RATE_LIMIT_WINDOW=900000
 NEXT_PUBLIC_VAPID_PUBLIC_KEY="your-vapid-public-key"
 VAPID_PRIVATE_KEY="your-vapid-private-key"
 
+# Image storage (Supabase) - optional locally
+# If unset, uploads return 503 and deleting a post skips image cleanup.
+# Use a separate DEV Supabase project with a public "club-images" bucket,
+# never the production keys: uploads and deletes act on the real bucket.
+# NEXT_PUBLIC_SUPABASE_URL="https://your-dev-project.supabase.co"
+# NEXT_PUBLIC_SUPABASE_ANON_KEY="your-dev-anon-key"
+
 # Demo Mode
 # coordinator | sponsor | president | vp | officer | member
 # or any seeded user's email
