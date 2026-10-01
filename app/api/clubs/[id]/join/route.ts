@@ -76,10 +76,10 @@ export async function POST(
 // DELETE /api/clubs/[id]/join - Leave a club
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const clubId = params.id
+    const { id: clubId } = await params
     const { searchParams } = new URL(request.url)
     const userId = searchParams.get('userId')
 
