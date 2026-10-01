@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { requireUser } from '@/lib/auth/session'
 import { isCoordinator } from '@/lib/auth/roles'
 
 // POST /api/admin/clubs/[id]/kick-member - Remove any member from a club
@@ -8,13 +9,16 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
     const { id: clubId } = await params
     const body = await request.json()
-    const { userId, targetUserId } = body
+    const { targetUserId } = body
 
-    if (!userId || !targetUserId) {
+    if (!targetUserId) {
       return NextResponse.json(
-        { success: false, error: 'userId and targetUserId are required' },
+        { success: false, error: 'targetUserId is required' },
         { status: 400 }
       )
     }

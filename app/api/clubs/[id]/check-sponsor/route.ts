@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import pool from "@/lib/db"
+import { requireUser } from "@/lib/auth/session"
 
 // GET /api/clubs/[id]/check-sponsor - Check if user is already a sponsor of this club
 export async function GET(
@@ -7,16 +8,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
     const { id: clubId } = await params
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get("userId")
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: "User ID required" },
-        { status: 400 }
-      )
-    }
 
     // Check if user is an active sponsor of this club
     const result = await pool.query(

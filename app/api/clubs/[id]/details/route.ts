@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { requireUser } from '@/lib/auth/session'
 import { isCoordinator } from '@/lib/auth/roles'
 import { permissionsForRoles, rolesFor } from '@/lib/auth/permissions'
 
@@ -9,16 +10,16 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
     const { id: clubId } = await params
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
 
     // Get club details with primary president info (for backward compatibility)
     let clubQuery = `
       SELECT 
         c.*,
-        u.name as president_name,
-        u.email as president_email
+        u.name as president_name
       FROM clubs c
       LEFT JOIN users u ON c.president_id = u.id
       WHERE c.id = $1
@@ -132,7 +133,6 @@ export async function GET(
           p.created_at,
           p.user_id as author_id,
           u.name as author_name,
-          u.email as author_email,
           c.name as club_name,
           c.image_url as club_avatar
         FROM posts p
@@ -140,7 +140,7 @@ export async function GET(
         JOIN clubs c ON p.club_id = c.id
         LEFT JOIN post_likes pl ON p.id = pl.post_id
         WHERE p.club_id = $1
-        GROUP BY p.id, u.id, u.name, u.email, c.name, c.image_url
+        GROUP BY p.id, u.id, u.name, c.name, c.image_url
         ORDER BY p.created_at DESC
         LIMIT 20
       `
@@ -181,6 +181,16 @@ export async function GET(
       userIsCoordinator = coordinator
     }
 
+    // Leaders and sponsors are listed with their email so students can reach them; the rest of
+    // the roster's emails are only for people who can email the whole club.
+    const viewerPermissions = permissionsForRoles(
+      rolesFor({ memberRole: userMembership, isSponsor: userIsSponsor, isCoordinator: userIsCoordinator })
+    )
+    const canSeeMemberEmails = viewerPermissions.includes('emailAll')
+    const members = membersResult.rows.map((member: any) =>
+      member.role !== 'member' || canSeeMemberEmails ? member : { ...member, email: null }
+    )
+
     return NextResponse.json({
       success: true,
       data: {
@@ -192,11 +202,9 @@ export async function GET(
           is_sponsor: userIsSponsor,
           is_coordinator: userIsCoordinator,
           // What this viewer may do here; the page shows buttons from this list
-          permissions: permissionsForRoles(
-            rolesFor({ memberRole: userMembership, isSponsor: userIsSponsor, isCoordinator: userIsCoordinator })
-          ),
+          permissions: viewerPermissions,
         },
-        members: membersResult.rows,
+        members,
         posts,
       },
     })

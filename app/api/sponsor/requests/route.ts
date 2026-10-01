@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import pool from "@/lib/db"
+import { requireUser } from "@/lib/auth/session"
 import { getUserRoles } from "@/lib/auth/roles"
 
 // GET /api/sponsor/requests - Get all pending leadership requests for sponsored clubs
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get("userId")
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: "User ID required" },
-        { status: 400 }
-      )
-    }
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
 
     // Get user roles to determine access
     const roles = await getUserRoles(userId)

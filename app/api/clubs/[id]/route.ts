@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { requireUser } from '@/lib/auth/session'
 import { requireClubPermission } from '@/lib/auth/club-permissions'
+import { validateUrl } from '@/lib/security/input-validator'
 
 // GET /api/clubs/[id] - Get a specific club with details
 export async function GET(
@@ -8,15 +10,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> } // Changed type
 ) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
     const { id: clubId } = await params // Await params
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
 
     const query = `
       SELECT 
         c.*,
         u.name as president_name,
-        u.email as president_email,
         COUNT(DISTINCT cm.id) as member_count,
         COALESCE(
           (SELECT json_agg(tag) FROM club_tags WHERE club_id = c.id),
@@ -69,16 +71,11 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> } // Changed type
 ) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
     const { id: clubId } = await params // Await params
     const body = await request.json()
-    const userId = body.userId // User making the update
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'User ID required' },
-        { status: 400 }
-      )
-    }
 
     const clubCheck = await pool.query('SELECT id FROM clubs WHERE id = $1', [clubId])
 
@@ -91,6 +88,18 @@ export async function PUT(
 
     const denied = await requireClubPermission(userId, clubId, 'editClub')
     if (denied) return denied
+
+    if (
+      (body.description !== undefined && (typeof body.description !== 'string' || body.description.length > 2000)) ||
+      (body.meetingTime && (typeof body.meetingTime !== 'string' || body.meetingTime.length > 200)) ||
+      (body.location && (typeof body.location !== 'string' || body.location.length > 200)) ||
+      (body.imageUrl && (typeof body.imageUrl !== 'string' || !validateUrl(body.imageUrl).valid))
+    ) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid club details' },
+        { status: 400 }
+      )
+    }
 
     // Build update query dynamically
     const updates: string[] = []

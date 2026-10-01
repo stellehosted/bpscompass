@@ -1,19 +1,14 @@
 import { NextRequest, NextResponse } from "next/server"
 import pool from "@/lib/db"
 import { getUserRoles } from "@/lib/auth/roles"
+import { requireUser } from "@/lib/auth/session"
 
 // GET /api/users/stats - Get user statistics
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get("userId")
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: "User ID required" },
-        { status: 400 }
-      )
-    }
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
 
     // Get user roles
     const roles = await getUserRoles(userId)

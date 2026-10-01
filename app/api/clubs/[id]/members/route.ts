@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { requireUser } from '@/lib/auth/session'
+import { requireClubPermission } from '@/lib/auth/club-permissions'
 
 // GET /api/clubs/[id]/members - Get all members of a club
 export async function GET(
@@ -7,7 +9,13 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
     const { id: clubId } = await params
+
+    // This lists every member with their email, so it is for people who manage the club
+    const denied = await requireClubPermission(auth.userId, clubId, 'manageMembers')
+    if (denied) return denied
 
     const query = `
       SELECT 

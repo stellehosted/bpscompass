@@ -2,13 +2,10 @@
 
 import React, { createContext, useContext, useEffect, useState } from "react"
 import { PublicClientApplication, AccountInfo, AuthenticationResult } from "@azure/msal-browser"
-import { msalConfig, loginRequest, isBerkeleyPrepEmail, getRememberMe, UserProfile } from "@/lib/auth-config"
-import { DEMO_MODE, DEMO_EMAIL } from "@/lib/demo-mode"
-import { debugMSAL } from "@/lib/debug-msal"
+import { msalConfig, loginRequest, getRememberMe, UserProfile } from "@/lib/auth-config"
+import { DEMO_MODE } from "@/lib/demo-mode"
 import { setupCryptoPolyfill, isSecureContext, getSecurityWarning } from "@/lib/crypto-polyfill"
 import { autoFixStuckInteraction, clearMSALCache } from "@/lib/clear-msal-cache"
-import { formatDisplayName } from "@/lib/utils"
-// Removed server-side imports to prevent bundling issues
 
 interface AuthContextType {
   user: UserProfile | null
@@ -19,30 +16,34 @@ interface AuthContextType {
   login: () => Promise<void>
   logout: () => void
   createProfile: (profileData: Partial<UserProfile>) => Promise<void>
-  getUserFromDatabase: (email: string) => Promise<UserProfile | null>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
-// Setup crypto polyfill BEFORE initializing MSAL
 if (typeof window !== 'undefined') {
-  setupCryptoPolyfill()
-  const warning = getSecurityWarning()
-  if (warning) {
-    console.warn(warning)
-  }
-  
-  // AGGRESSIVE: Always clear MSAL cache on mobile HTTP to prevent stuck states
-  if (!isSecureContext()) {
-    console.log('🔧 Non-secure context detected - clearing MSAL cache to prevent stuck states')
-    try {
-      sessionStorage.clear()
-      localStorage.removeItem('msal.interaction.status')
-    } catch (e) {
-      console.warn('Could not clear storage:', e)
+  // Plain-HTTP mobile testing (npm run mobile) has no Web Crypto, which MSAL needs, so dev
+  // builds install a stand-in. This must never reach production: the stand-in fakes hashing
+  // and signature checks. Next replaces NODE_ENV at build time, so this branch is dropped
+  // from production bundles entirely.
+  if (process.env.NODE_ENV !== 'production') {
+    setupCryptoPolyfill()
+    const warning = getSecurityWarning()
+    if (warning) {
+      console.warn(warning)
+    }
+
+    // AGGRESSIVE: Always clear MSAL cache on mobile HTTP to prevent stuck states
+    if (!isSecureContext()) {
+      console.log('🔧 Non-secure context detected - clearing MSAL cache to prevent stuck states')
+      try {
+        sessionStorage.clear()
+        localStorage.removeItem('msal.interaction.status')
+      } catch (e) {
+        console.warn('Could not clear storage:', e)
+      }
     }
   }
-  
+
   // Auto-fix any stuck interaction state from previous sessions
   autoFixStuckInteraction()
 
@@ -57,10 +58,8 @@ if (typeof window !== 'undefined') {
   })
 }
 
-// Initialize MSAL (after polyfill is set up)
+// Initialize MSAL (after polyfill is set up, in dev)
 const msalInstance = new PublicClientApplication(msalConfig)
-
-// Use API calls instead of direct service imports
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserProfile | null>(null)
@@ -148,6 +147,56 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     initializeAuth()
   }, [isInitialized])
 
+  // Turns the user row the server sends back into the profile the app uses
+  const toProfile = (row: any): UserProfile => ({
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    role: row.role,
+    grade: row.grade,
+    department: row.department,
+    interests: [], // Not stored in database yet
+    createdAt: new Date(row.created_at),
+    updatedAt: new Date(row.updated_at),
+  })
+
+  // Trades the Microsoft sign-in for our own session cookie. The server verifies the ID token
+  // and decides who the user is; nothing the browser claims about itself is trusted.
+  const createServerSession = async (tokens: AuthenticationResult) => {
+    const response = await fetch('/api/auth/session', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        idToken: tokens.idToken,
+        accessToken: tokens.accessToken,
+        remember: getRememberMe(),
+      }),
+    })
+    const data = await response.json().catch(() => ({}))
+    return { ok: response.ok && data.success, status: response.status, data }
+  }
+
+  const applySession = (data: { user: any; isTeacher?: boolean }) => {
+    setUser(toProfile(data.user))
+    setIsTeacher(data.isTeacher ?? false)
+    setIsAuthenticated(true)
+    // User always has a profile after authentication since the server creates it
+    setHasProfile(true)
+  }
+
+  // Ends both sessions: ours (the cookie) and Microsoft's (the MSAL cache)
+  const signOut = async () => {
+    await fetch('/api/auth/session', { method: 'DELETE' }).catch(() => {})
+    if (!DEMO_MODE) {
+      msalInstance.logout()
+    }
+    setUser(null)
+    setIsAuthenticated(false)
+    setHasProfile(false)
+    setIsTeacher(false)
+    setIsInteractionInProgress(false)
+  }
+
   const handleAuthSuccess = async (account: AccountInfo) => {
     try {
       // Check if interaction is already in progress
@@ -156,9 +205,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return
       }
 
-      // Get user info from Microsoft Graph
+      // Get fresh Microsoft tokens for this account
       let response: AuthenticationResult | null = null
-      
+
       try {
         response = await msalInstance.acquireTokenSilent({
           ...loginRequest,
@@ -166,16 +215,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         })
       } catch (silentError: any) {
         console.warn("Silent token acquisition failed:", silentError?.errorCode)
-        
+
         // Handle specific errors
-        if (silentError?.errorCode === 'no_tokens_found' || 
+        if (silentError?.errorCode === 'no_tokens_found' ||
             silentError?.errorCode === 'no_account_error' ||
             silentError?.errorMessage?.includes('no token request found in cache')) {
           console.log("No cached token found - user needs to login interactively")
           setIsLoading(false)
           return
         }
-        
+
         // For other errors, try interactive login
         console.log("Attempting interactive token acquisition...")
         try {
@@ -187,101 +236,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      if (response) {
-        try {
-          // Debug: Log account info
-          debugMSAL.logAccountInfo(account)
-          
-          const userInfo = await getUserInfo(response.accessToken)
-          
-          // Check if userInfo has required properties
-          if (!userInfo || !userInfo.email) {
-            console.error("Failed to get user info from Microsoft Graph")
-            setIsLoading(false)
-            return
-          }
-          
-          // Check if email is from BPS
-          if (!isBerkeleyPrepEmail(userInfo.email)) {
-            alert("Only BPS School email addresses are allowed to access this application.")
-            logout()
-            return
-          }
+      if (!response) {
+        return
+      }
 
-          // Atomic authentication and registration: immediately upsert user to database
-          await upsertUserToDatabase(userInfo.email, formatDisplayName(userInfo.displayName || userInfo.name || ""))
+      let session = await createServerSession(response)
 
-          // Retrieve user profile and teacher status in parallel — zero extra latency.
-          const [databaseUser, teacherData] = await Promise.all([
-            getUserFromDatabase(userInfo.email),
-            fetch(`/api/users/check-teacher?email=${encodeURIComponent(userInfo.email)}`)
-              .then((r) => r.json())
-              .catch(() => ({ isTeacher: false })),
-          ])
-          if (databaseUser) {
-            setUser(databaseUser)
-            setIsTeacher(teacherData.isTeacher ?? false)
-            setIsAuthenticated(true)
-            // User always has a profile after authentication since we create it in the database
-            setHasProfile(true)
-          } else {
-            throw new Error("Failed to retrieve user from database after creation")
-          }
-        } catch (graphError) {
-          console.error("Microsoft Graph API error:", graphError)
-          
-          // Fallback: try to get basic info from the account
-          if (account.username) {
-            console.log("Using fallback account info:", account)
-            
-            // Check if email is from BPS
-            if (!isBerkeleyPrepEmail(account.username)) {
-              alert("Only BPS School email addresses are allowed to access this application.")
-              logout()
-              return
-            }
-
-            try {
-              // Atomic authentication and registration with fallback data
-              await upsertUserToDatabase(account.username, formatDisplayName(account.name || ""))
-
-              // Retrieve user profile and teacher status in parallel.
-              const [databaseUser, teacherData] = await Promise.all([
-                getUserFromDatabase(account.username),
-                fetch(`/api/users/check-teacher?email=${encodeURIComponent(account.username)}`)
-                  .then((r) => r.json())
-                  .catch(() => ({ isTeacher: false })),
-              ])
-              if (databaseUser) {
-                setUser(databaseUser)
-                setIsTeacher(teacherData.isTeacher ?? false)
-                setIsAuthenticated(true)
-                // User always has a profile after authentication since we create it in the database
-                setHasProfile(true)
-              } else {
-                throw new Error("Failed to retrieve user from database after creation")
-              }
-            } catch (dbError) {
-              console.error("Database error during fallback authentication:", dbError)
-              
-              // More specific error message
-              if (dbError instanceof Error && dbError.message.includes('Failed to sync user')) {
-                alert("Failed to register user in database. Please check your connection and try again.")
-              } else {
-                alert("Failed to register user. Please try again or contact support.")
-              }
-              setIsLoading(false)
-              return
-            }
-          } else {
-            console.error("No fallback email available")
-            setIsLoading(false)
-          }
+      // A cached ID token can be stale; get a fresh one and try once more
+      if (!session.ok && session.status === 401) {
+        const fresh = await msalInstance
+          .acquireTokenSilent({ ...loginRequest, account, forceRefresh: true })
+          .catch(() => null)
+        if (fresh) {
+          session = await createServerSession(fresh)
         }
+      }
+
+      if (session.ok) {
+        applySession(session.data)
+      } else if (session.data?.code === 'domain_not_allowed') {
+        alert(session.data.error)
+        await signOut()
+      } else {
+        console.error("Server sign-in failed:", session.status, session.data)
+        alert("Failed to sign in. Please try again or contact support.")
       }
     } catch (error) {
       console.error("Error handling auth success:", error)
-      
+
       // Handle specific MSAL errors
       if (error instanceof Error) {
         if (error.message.includes('interaction_in_progress')) {
@@ -302,41 +284,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const getUserInfo = async (accessToken: string) => {
-    try {
-      // Try to get user info with email field explicitly requested
-      const response = await fetch("https://graph.microsoft.com/v1.0/me?$select=id,displayName,mail,userPrincipalName,email", {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      })
-      
-      if (!response.ok) {
-        throw new Error(`Microsoft Graph API error: ${response.status} ${response.statusText}`)
-      }
-      
-      const userInfo = await response.json()
-      console.log("Microsoft Graph API response:", userInfo) // Debug log
-      
-      // Check for email in various possible fields
-      const email = userInfo.mail || userInfo.email || userInfo.userPrincipalName
-      
-      if (!userInfo || !email) {
-        console.error("User info received:", userInfo)
-        throw new Error("Microsoft Graph API returned incomplete user information. Email field not found.")
-      }
-      
-      // Return userInfo with email field normalized
-      return {
-        ...userInfo,
-        email: email
-      }
-    } catch (error) {
-      console.error("Error fetching user info:", error)
-      throw error
-    }
-  }
-
   const login = async () => {
     try {
       // Prevent multiple simultaneous login attempts
@@ -353,17 +300,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setIsLoading(true)
       setIsInteractionInProgress(true)
-      
+
       // Demo mode - simulate login
       if (DEMO_MODE) {
         if (!(await signInAsDemoUser())) {
-          alert(`Couldn't find the demo user (${DEMO_EMAIL}) in the database. Load the test data with scripts/reset-db.sh, then try again.`)
+          alert("Couldn't sign in as the demo user. Load the test data with scripts/reset-db.sh, then try again.")
         }
         setIsLoading(false)
         setIsInteractionInProgress(false)
         return
       }
-      
+
       // Check if user is already signed in
       const accounts = msalInstance.getAllAccounts()
       if (accounts.length > 0) {
@@ -372,10 +319,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsInteractionInProgress(false)
         return
       }
-      
+
       // Ensure MSAL is initialized
       await msalInstance.initialize()
-      
+
       const response: AuthenticationResult = await msalInstance.loginPopup(loginRequest)
       if (response.account) {
         await handleAuthSuccess(response.account)
@@ -393,86 +340,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log("Interaction in progress, cannot logout now")
       return
     }
-    
-    msalInstance.logout()
-    setUser(null)
-    setIsAuthenticated(false)
-    setHasProfile(false)
-    setIsInteractionInProgress(false)
+
+    void signOut()
   }
 
-  const getUserFromDatabase = async (email: string): Promise<UserProfile | null> => {
-    try {
-      const response = await fetch('/api/users/by-email', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      })
-      
-      if (!response.ok) {
-        return null
-      }
-      
-      const data = await response.json()
-      if (!data.success || !data.user) {
-        return null
-      }
-
-      const user = data.user
-      return {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-        grade: user.grade,
-        department: user.department,
-        interests: [], // Not stored in database yet
-        createdAt: new Date(user.created_at),
-        updatedAt: new Date(user.updated_at),
-      }
-    } catch (error) {
-      console.error("Error retrieving user from database:", error)
-      return null
-    }
-  }
-
-  // Demo mode: sign in as the seeded database user for NEXT_PUBLIC_DEMO_PERSONA
+  // Demo mode: the server signs us in as the seeded database user for NEXT_PUBLIC_DEMO_PERSONA.
+  // It only works against a development server (see /api/auth/session).
   const signInAsDemoUser = async (): Promise<boolean> => {
-    const demoUser = await getUserFromDatabase(DEMO_EMAIL)
-    if (!demoUser) {
-      console.error(`Demo mode: no user with email ${DEMO_EMAIL} in the database. Load the test data with scripts/reset-db.sh.`)
-      return false
-    }
-    setUser(demoUser)
-    setIsTeacher(demoUser.role === "sponsor")
-    setIsAuthenticated(true)
-    setHasProfile(true)
-    return true
-  }
-
-  const upsertUserToDatabase = async (email: string, name: string): Promise<void> => {
     try {
-      const response = await fetch('/api/users/sync', {
+      const response = await fetch('/api/auth/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email,
-          name,
-          role: 'student'
-        })
+        body: JSON.stringify({ demo: true }),
       })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        console.error('Sync API error:', errorData)
-        throw new Error(errorData.error || 'Failed to sync user')
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok || !data.success) {
+        console.error("Demo mode sign-in failed:", data.error)
+        return false
       }
-      
-      const result = await response.json()
-      console.log('User sync successful:', result)
+      applySession(data)
+      return true
     } catch (error) {
-      console.error("Error upserting user to database:", error)
-      throw new Error(`Database registration failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      console.error("Demo mode sign-in failed:", error)
+      return false
     }
   }
 
@@ -487,9 +377,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          id: user.id,
           name: profileData.name || user.name,
-          role: profileData.role || user.role,
           grade: profileData.grade,
           department: profileData.department,
         })
@@ -533,7 +421,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     login,
     logout,
     createProfile,
-    getUserFromDatabase,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

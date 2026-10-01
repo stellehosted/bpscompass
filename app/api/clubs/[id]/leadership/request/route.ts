@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import pool from "@/lib/db"
-import { isPresidentOfClub, getClubSponsors } from "@/lib/auth/roles"
+import { requireUser } from "@/lib/auth/session"
+import { isPresidentOfClub, getClubSponsors, canManageLeadership } from "@/lib/auth/roles"
 import { logAuditAction } from "@/lib/auth/audit"
 
 // POST /api/clubs/[id]/leadership/request - Request leadership change (requires sponsor approval)
@@ -9,13 +10,26 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const requestedBy = auth.userId
     const { id: clubId } = await params
     const body = await request.json()
-    const { requestedBy, targetUserId, actionType, previousRole, newRole } = body
+    const { targetUserId, actionType, previousRole, newRole } = body
 
-    if (!requestedBy || !targetUserId || !actionType) {
+    if (!targetUserId || !actionType) {
       return NextResponse.json(
         { success: false, error: "Missing required fields" },
+        { status: 400 }
+      )
+    }
+
+    // Only real club roles can be requested; 'coordinator' or 'sponsor' here would be a privilege escalation
+    const clubRoles = ['member', 'officer', 'vice_president', 'president']
+    const actionTypes = ['add_president', 'add_officer', 'remove_president', 'remove_officer']
+    if (!actionTypes.includes(actionType) || (newRole && !clubRoles.includes(newRole))) {
+      return NextResponse.json(
+        { success: false, error: "Invalid leadership change" },
         { status: 400 }
       )
     }
@@ -92,14 +106,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
     const { id: clubId } = await params
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get("userId")
 
-    if (!userId) {
+    // Requests name people and their emails, so only the club's leadership oversight sees them
+    if (!(await canManageLeadership(auth.userId, clubId))) {
       return NextResponse.json(
-        { success: false, error: "User ID required" },
-        { status: 400 }
+        { success: false, error: "You don't have permission to view this club's leadership requests" },
+        { status: 403 }
       )
     }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { requireUser } from '@/lib/auth/session'
 import { isPresidentOfClub } from '@/lib/auth/roles'
 
 // POST /api/clubs/[id]/join - Join a club
@@ -8,16 +9,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> } // Changed type
 ) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
     const { id: clubId } = await params // Await params
-    const body = await request.json()
-    const userId = body.userId
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'User ID required' },
-        { status: 400 }
-      )
-    }
 
     // Check if club exists
     const clubQuery = 'SELECT id FROM clubs WHERE id = $1'
@@ -79,16 +74,10 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
     const { id: clubId } = await params
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'User ID required' },
-        { status: 400 }
-      )
-    }
 
     const clubQuery = 'SELECT id FROM clubs WHERE id = $1'
     const clubResult = await pool.query(clubQuery, [clubId])

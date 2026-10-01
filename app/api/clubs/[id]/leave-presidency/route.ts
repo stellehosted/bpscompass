@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { requireUser } from '@/lib/auth/session'
 import { isPresidentOfClub } from '@/lib/auth/roles'
 import { syncPrimaryPresident } from '@/lib/club-president'
 
@@ -14,17 +15,12 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
     const { id: clubId } = await params
     const body = await request.json()
-    const userId = body.userId
     const newPresidentId = body.newPresidentId
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'User ID required' },
-        { status: 400 }
-      )
-    }
 
     const clubCheck = await pool.query('SELECT id FROM clubs WHERE id = $1', [clubId])
 

@@ -130,7 +130,6 @@ export default function ComponentGalleryPage() {
                 club_avatar: "/icon-512.png",
                 title: "GOAT and Hoppers",
                 author_name: "Leila DiPiazza",
-                author_email: "leila@example.com",
                 content:
                   "Hey everyone, we still have club today in G116! I'll be putting on two different animated movie trailers: GOAT and Hoppers! I think they're both pretty cool, and we can talk about if one seems more compelling than the other due to the animation :)\n\nhope to see you all there!\n-Sequential Arts Club",
                 image_url: null,

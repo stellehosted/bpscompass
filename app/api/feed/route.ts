@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { requireUser } from '@/lib/auth/session'
 
 /**
  * GET /api/feed - Get paginated feed of all club posts
@@ -10,10 +11,12 @@ import pool from '@/lib/db'
  */
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')
     const limit = Math.min(parseInt(searchParams.get('limit') || '20'), 50) // Max 50 posts per page
-    const userId = searchParams.get('userId')
     const offset = (page - 1) * limit
 
     // Validate pagination parameters
@@ -37,14 +40,13 @@ export async function GET(request: NextRequest) {
         p.created_at,
         p.user_id as author_id,
         u.name as author_name,
-        u.email as author_email,
         c.name as club_name,
         c.image_url as club_avatar
       FROM posts p
       JOIN users u ON p.user_id = u.id
       JOIN clubs c ON p.club_id = c.id
       LEFT JOIN post_likes pl ON p.id = pl.post_id
-      GROUP BY p.id, u.id, u.name, u.email, c.name, c.image_url
+      GROUP BY p.id, u.id, u.name, c.name, c.image_url
       ORDER BY p.created_at DESC
       LIMIT $1 OFFSET $2
     `

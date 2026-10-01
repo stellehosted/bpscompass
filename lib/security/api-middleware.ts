@@ -1,6 +1,6 @@
 /**
  * API Security Middleware
- * Provides rate limiting, input validation, and security headers
+ * Provides rate limiting and request validation helpers (security headers are in next.config.mjs)
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -71,39 +71,6 @@ export function withRateLimit(
 }
 
 /**
- * Security headers middleware
- */
-export function addSecurityHeaders(response: NextResponse): NextResponse {
-  // Prevent XSS attacks
-  response.headers.set('X-Content-Type-Options', 'nosniff')
-  response.headers.set('X-Frame-Options', 'DENY')
-  response.headers.set('X-XSS-Protection', '1; mode=block')
-  
-  // Content Security Policy
-  response.headers.set(
-    'Content-Security-Policy',
-    "default-src 'self'; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://vercel.live; " +
-    "style-src 'self' 'unsafe-inline'; " +
-    "img-src 'self' data: https: blob:; " +
-    "font-src 'self' data:; " +
-    "connect-src 'self' https://vercel.live https://*.vercel.app; " +
-    "frame-ancestors 'none';"
-  )
-  
-  // Referrer Policy
-  response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
-  
-  // Permissions Policy
-  response.headers.set(
-    'Permissions-Policy',
-    'camera=(), microphone=(), geolocation=(), interest-cohort=()'
-  )
-
-  return response
-}
-
-/**
  * Validate request body size
  */
 export async function validateRequestSize(
@@ -145,36 +112,6 @@ export function validateContentType(
   }
 
   return { valid: true }
-}
-
-/**
- * Error response helper with security headers
- */
-export function secureErrorResponse(
-  error: string,
-  status: number = 400
-): NextResponse {
-  const response = NextResponse.json(
-    { success: false, error },
-    { status }
-  )
-  
-  return addSecurityHeaders(response)
-}
-
-/**
- * Success response helper with security headers
- */
-export function secureSuccessResponse(
-  data: any,
-  status: number = 200
-): NextResponse {
-  const response = NextResponse.json(
-    { success: true, ...data },
-    { status }
-  )
-  
-  return addSecurityHeaders(response)
 }
 
 /**

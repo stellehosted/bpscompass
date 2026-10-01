@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { requireUser } from '@/lib/auth/session'
 import { checkPostRateLimit } from '@/lib/security/input-validator'
 import { getClientIdentifier } from '@/lib/security/api-middleware'
+import { validateUrl } from '@/lib/security/input-validator'
 import { createNotificationsForClubMembers } from '@/lib/services/notifications'
 import { requireClubPermission } from '@/lib/auth/club-permissions'
 
@@ -11,20 +13,20 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> } // Changed type
 ) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
     const { id: clubId } = await params // Await params
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
     const query = `
       SELECT 
         p.*,
         u.name as author_name,
-        u.email as author_email,
         COUNT(DISTINCT pl.id)::int as likes_count
       FROM posts p
       JOIN users u ON p.user_id = u.id
       LEFT JOIN post_likes pl ON p.id = pl.post_id
       WHERE p.club_id = $1
-      GROUP BY p.id, u.id, u.name, u.email
+      GROUP BY p.id, u.id, u.name
       ORDER BY p.created_at DESC
     `
 
@@ -72,19 +74,14 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
     const { id: clubId } = await params // Await params
     const body = await request.json()
-    const userId = body.userId
     const content = body.content
     const imageUrl = body.imageUrl
     const title = typeof body.title === 'string' ? body.title.trim() : ''
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'User ID required' },
-        { status: 400 }
-      )
-    }
 
     // Apply post-specific rate limiting
     const identifier = `${getClientIdentifier(request)}-${userId}`
@@ -124,6 +121,20 @@ export async function POST(
       )
     }
 
+    if (title.length > 200 || content.length > 5000) {
+      return NextResponse.json(
+        { success: false, error: 'Post title must be under 200 characters and content under 5000' },
+        { status: 400 }
+      )
+    }
+
+    if (imageUrl && (typeof imageUrl !== 'string' || !validateUrl(imageUrl).valid)) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid image URL' },
+        { status: 400 }
+      )
+    }
+
     const denied = await requireClubPermission(userId, clubId, 'post')
     if (denied) return denied
 
@@ -143,14 +154,13 @@ export async function POST(
     ])
 
     // Get author info
-    const authorQuery = 'SELECT name, email FROM users WHERE id = $1'
+    const authorQuery = 'SELECT name FROM users WHERE id = $1'
     const authorResult = await pool.query(authorQuery, [userId])
     const author = authorResult.rows[0]
 
     const post = {
       ...result.rows[0],
       author_name: author.name,
-      author_email: author.email,
       isLiked: false,
     }
 

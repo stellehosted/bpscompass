@@ -1,20 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { requireUser } from '@/lib/auth/session'
 
 // POST /api/notifications/subscribe - Save push subscription
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
     const body = await request.json()
-    const { userId, subscription } = body
+    const { subscription } = body
 
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'User ID required' },
-        { status: 400 }
-      )
-    }
-
-    if (!subscription || !subscription.endpoint || !subscription.keys) {
+    if (!subscription || typeof subscription.endpoint !== 'string' || !subscription.endpoint.startsWith('https://') || subscription.endpoint.length > 2048 || !subscription.keys) {
       return NextResponse.json(
         { success: false, error: 'Valid push subscription required' },
         { status: 400 }
@@ -57,16 +54,11 @@ export async function POST(request: NextRequest) {
 // DELETE /api/notifications/subscribe - Remove push subscription
 export async function DELETE(request: NextRequest) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
     const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
     const endpoint = searchParams.get('endpoint')
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'User ID required' },
-        { status: 400 }
-      )
-    }
 
     if (endpoint) {
       // Remove specific subscription

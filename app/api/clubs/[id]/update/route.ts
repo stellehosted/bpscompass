@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { requireUser } from '@/lib/auth/session'
 import { requireClubPermission } from '@/lib/auth/club-permissions'
+import { validateUrl } from '@/lib/security/input-validator'
 
 // PUT /api/clubs/[id]/update - Update club information (needs the editClub permission)
 export async function PUT(
@@ -8,9 +10,12 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
     const { id: clubId } = await params
     const body = await request.json()
-    const { description, meetingTime, location, imageUrl, userId } = body
+    const { description, meetingTime, location, imageUrl } = body
 
     const denied = await requireClubPermission(userId, clubId, 'editClub')
     if (denied) return denied
@@ -19,6 +24,18 @@ export async function PUT(
     if (!description) {
       return NextResponse.json(
         { success: false, error: 'Description is required' },
+        { status: 400 }
+      )
+    }
+
+    if (
+      typeof description !== 'string' || description.length > 2000 ||
+      (meetingTime && (typeof meetingTime !== 'string' || meetingTime.length > 200)) ||
+      (location && (typeof location !== 'string' || location.length > 200)) ||
+      (imageUrl && (typeof imageUrl !== 'string' || !validateUrl(imageUrl).valid))
+    ) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid club details' },
         { status: 400 }
       )
     }

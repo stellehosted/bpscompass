@@ -1,18 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { requireUser } from '@/lib/auth/session'
 
 // GET /api/notifications/preferences - Get user's notification preferences
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const userId = searchParams.get('userId')
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'User ID required' },
-        { status: 400 }
-      )
-    }
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
 
     const result = await pool.query(
       'SELECT * FROM notification_preferences WHERE user_id = $1',
@@ -46,15 +41,11 @@ export async function GET(request: NextRequest) {
 // PUT /api/notifications/preferences - Update user's notification preferences
 export async function PUT(request: NextRequest) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
     const body = await request.json()
-    const { userId, pushEnabled, filterMode } = body
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'User ID required' },
-        { status: 400 }
-      )
-    }
+    const { pushEnabled, filterMode } = body
 
     // Validate filterMode
     if (filterMode && !['all', 'my_clubs'].includes(filterMode)) {

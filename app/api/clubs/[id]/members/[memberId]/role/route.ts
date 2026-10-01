@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { requireUser } from '@/lib/auth/session'
 import { requireClubPermission } from '@/lib/auth/club-permissions'
 import { syncPrimaryPresident } from '@/lib/club-president'
 
@@ -9,13 +10,15 @@ export async function PUT(
   { params }: { params: Promise<{ id: string; memberId: string }> }
 ) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
     const { id: clubId, memberId } = await params
     const body = await request.json()
-    const { role, updatedBy } = body
+    const { role } = body
 
-    if (!role || !updatedBy) {
+    if (!role) {
       return NextResponse.json(
-        { success: false, error: 'Role and updatedBy are required' },
+        { success: false, error: 'Role is required' },
         { status: 400 }
       )
     }
@@ -29,7 +32,7 @@ export async function PUT(
       )
     }
 
-    const denied = await requireClubPermission(updatedBy, clubId, 'manageMembers')
+    const denied = await requireClubPermission(auth.userId, clubId, 'manageMembers')
     if (denied) return denied
 
     // Update member role (supports multiple presidents - co-presidency)

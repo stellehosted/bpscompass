@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { requireUser } from '@/lib/auth/session'
 
 // POST /api/clubs/[id]/claim - Claim an unclaimed club
 export async function POST(
@@ -7,16 +8,12 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
     const { id: clubId } = await params
     const body = await request.json()
-    const { userId, confirmed } = body
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'User ID required' },
-        { status: 400 }
-      )
-    }
+    const { confirmed } = body
 
     if (!confirmed) {
       return NextResponse.json(

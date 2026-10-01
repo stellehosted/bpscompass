@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { requireUser } from '@/lib/auth/session'
 import { requireClubPermission } from '@/lib/auth/club-permissions'
 import { syncPrimaryPresident } from '@/lib/club-president'
 
@@ -9,13 +10,16 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
     const { id: clubId } = await params
     const body = await request.json()
-    const { email, role, addedBy } = body
+    const { email, role } = body
 
-    if (!email || !role || !addedBy) {
+    if (!email || typeof email !== 'string' || !role) {
       return NextResponse.json(
-        { success: false, error: 'Email, role, and addedBy are required' },
+        { success: false, error: 'Email and role are required' },
         { status: 400 }
       )
     }
@@ -37,12 +41,12 @@ export async function POST(
       )
     }
 
-    const denied = await requireClubPermission(addedBy, clubId, 'manageMembers')
+    const denied = await requireClubPermission(userId, clubId, 'manageMembers')
     if (denied) return denied
 
     // Find user by email
-    const userQuery = 'SELECT id FROM users WHERE email = $1'
-    const userResult = await pool.query(userQuery, [email])
+    const userQuery = 'SELECT id FROM users WHERE lower(email) = lower($1)'
+    const userResult = await pool.query(userQuery, [email.trim()])
     
     if (userResult.rows.length === 0) {
       return NextResponse.json(
@@ -51,23 +55,23 @@ export async function POST(
       )
     }
 
-    const userId = userResult.rows[0].id
+    const targetUserId = userResult.rows[0].id
 
     // Check if user is already a member
     const memberQuery = 'SELECT role FROM club_members WHERE club_id = $1 AND user_id = $2'
-    const memberResult = await pool.query(memberQuery, [clubId, userId])
+    const memberResult = await pool.query(memberQuery, [clubId, targetUserId])
     
     if (memberResult.rows.length > 0) {
       // User is already a member, update their role
       await pool.query(
         'UPDATE club_members SET role = $1 WHERE club_id = $2 AND user_id = $3',
-        [role, clubId, userId]
+        [role, clubId, targetUserId]
       )
     } else {
       // User is not a member, add them with the leadership role
       await pool.query(
         'INSERT INTO club_members (club_id, user_id, role, joined_at) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)',
-        [clubId, userId, role]
+        [clubId, targetUserId, role]
       )
     }
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import pool from "@/lib/db"
+import { requireUser } from "@/lib/auth/session"
 import { isSponsorOfClub, isCoordinator } from "@/lib/auth/roles"
 import { logAuditAction } from "@/lib/auth/audit"
 
@@ -9,9 +10,12 @@ export async function POST(
   { params }: { params: Promise<{ requestId: string }> }
 ) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
     const { requestId } = await params
     const body = await request.json()
-    const { userId, action, rejectionReason } = body
+    const { action, rejectionReason } = body
 
     if (!userId || !action) {
       return NextResponse.json(
@@ -74,6 +78,9 @@ export async function POST(
 
         // Apply the leadership change
         const { club_id, target_user_id, action_type, new_role } = leadershipRequest
+        if (new_role && !['member', 'officer', 'vice_president', 'president'].includes(new_role)) {
+          throw new Error('Invalid role on leadership request')
+        }
 
         switch (action_type) {
           case "add_president":

@@ -47,7 +47,7 @@ interface ClubMember {
   role: string
   joined_at: string
   name: string
-  email: string
+  email: string | null // hidden from viewers who can't email the whole club
 }
 
 interface President {
@@ -76,7 +76,6 @@ interface Club {
   is_sponsor: boolean
   permissions: Permission[]
   president_name: string | null
-  president_email: string | null
   presidents: President[]
   sponsors: Sponsor[]
   tags: string[]
@@ -94,13 +93,15 @@ function SidebarSection({ title, children }: { title: string; children: React.Re
   )
 }
 
-function PersonWithEmail({ name, email }: { name: string; email: string }) {
+function PersonWithEmail({ name, email }: { name: string; email: string | null }) {
   return (
     <div className="min-w-0">
       <p className="text-base truncate">{formatDisplayName(name)}</p>
-      <p className="text-xs italic text-black/50 truncate" title={email}>
-        {email}
-      </p>
+      {email && (
+        <p className="text-xs italic text-black/50 truncate" title={email}>
+          {email}
+        </p>
+      )}
     </div>
   )
 }
@@ -277,7 +278,7 @@ export function ClubDetailPage({ clubId }: { clubId: string }) {
   }, [user?.id])
 
   const handleEmailAll = useCallback(() => {
-    openEmailAll(members.map((m) => m.email), club?.name ?? "", user?.email)
+    openEmailAll(members.flatMap((m) => (m.email ? [m.email] : [])), club?.name ?? "", user?.email)
   }, [members, user?.email, club?.name])
 
   // Only block the whole page on the first load; later refreshes (after an

@@ -14,7 +14,6 @@ export interface ClubPost {
   title?: string | null
   author_id?: string
   author_name: string
-  author_email: string
   content: string
   image_url: string | null
   likes_count: number

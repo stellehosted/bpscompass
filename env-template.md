@@ -1,11 +1,22 @@
 # Azure AD Authentication
 ## NEXT_PUBLIC_AZURE_CLIENT_ID: Application (client) ID
-## NEXT_PUBLIC_AZURE_TENANT_ID: Directory (tenant) ID
+## NEXT_PUBLIC_AZURE_TENANT_ID: Directory (tenant) ID. Must be the tenant GUID (not "common"):
+## the server checks sign-in tokens against it.
 NEXT_PUBLIC_AZURE_CLIENT_ID=your-azure-client-id
 NEXT_PUBLIC_AZURE_TENANT_ID=your-azure-tenant-id
 
+# Session cookie signing key (REQUIRED in production, 32+ random characters)
+# Generate with: openssl rand -base64 48
+# Anyone who knows this can forge a login, so keep it secret and never reuse it between
+# environments. Changing it signs everyone out. Local dev works without it (insecure fallback).
+SESSION_SECRET="generate-a-long-random-string"
+
 # Database Configuration
 DATABASE_URL="postgresql://postgres:password@localhost:5432/school_social_app"
+# Production only: the CA certificate that signs your database's TLS certificate (PEM text, or
+# one line with \n escapes). Supabase: download "prod-ca-2021.crt" from Database settings.
+# Unset = the connection is encrypted but the server is not verified.
+# DATABASE_CA_CERT="-----BEGIN CERTIFICATE-----\n...\n-----END CERTIFICATE-----"
 
 # File Upload Configuration
 UPLOAD_DIR="./public/uploads"

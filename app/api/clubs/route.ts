@@ -1,20 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
+import { requireUser } from '@/lib/auth/session'
 import { isCoordinator } from '@/lib/auth/roles'
+import { validateUrl } from '@/lib/security/input-validator'
 import { permissionsForRoles, rolesFor } from '@/lib/auth/permissions'
 
 // GET /api/clubs - Get all clubs with optional filtering
 export async function GET(request: NextRequest) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    const userId = auth.userId
     const { searchParams } = new URL(request.url)
     const isClaimed = searchParams.get('isClaimed')
-    const userId = searchParams.get('userId') // For filtering user's clubs
 
     let query = `
       SELECT 
         c.*,
         u.name as president_name,
-        u.email as president_email,
         COUNT(DISTINCT cm.id) as member_count,
         COALESCE(
           (SELECT json_agg(tag) FROM club_tags WHERE club_id = c.id),
@@ -106,12 +109,32 @@ export async function GET(request: NextRequest) {
 // POST /api/clubs - Create a new club (used by the admin dashboard)
 export async function POST(request: NextRequest) {
   try {
+    const auth = await requireUser(request)
+    if (!auth.ok) return auth.response
+    if (!(await isCoordinator(auth.userId))) {
+      return NextResponse.json(
+        { success: false, error: 'Only coordinators can create clubs' },
+        { status: 403 }
+      )
+    }
+
     const body = await request.json()
 
     // Validate required fields
     if (!body.name || !body.description) {
       return NextResponse.json(
         { success: false, error: 'Missing required fields: name, description' },
+        { status: 400 }
+      )
+    }
+
+    if (
+      typeof body.name !== 'string' || body.name.length > 100 ||
+      typeof body.description !== 'string' || body.description.length > 2000 ||
+      (body.imageUrl && (typeof body.imageUrl !== 'string' || !validateUrl(body.imageUrl).valid))
+    ) {
+      return NextResponse.json(
+        { success: false, error: 'Invalid club details' },
         { status: 400 }
       )
     }
