@@ -6,8 +6,8 @@
 --
 -- The admin tables (user_roles, club_sponsors, leadership_requests,
 -- audit_log, users.user_type) are NOT here. They live in
--- migrations/add_admin_system_tables.sql, which app/api/admin/migrate/route.ts also
--- reads by path, so it stays the single copy. Apply it after this file.
+-- migrations/add_admin_system_tables.sql, which stays the single copy. Apply it after
+-- this file.
 --
 -- Everything is IF NOT EXISTS, so this file is safe to re-run. It folds in what used to
 -- be posts-and-tags-schema.sql, post-title-schema.sql, post-likes-schema.sql and

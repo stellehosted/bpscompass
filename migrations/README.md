@@ -12,24 +12,10 @@ This migration adds the necessary tables for the multi-role admin system.
 
 ### Running the Migration
 
-#### Option 1: Via API Endpoint (Recommended)
-1. Add `MIGRATION_KEY` to your `.env.local` file:
-   ```
-   MIGRATION_KEY=your-secure-migration-key
-   ```
-
-2. Make a POST request to the migration endpoint:
-   ```bash
-   curl -X POST http://localhost:3000/api/admin/migrate \
-     -H "Authorization: Bearer your-secure-migration-key"
-   ```
-
-#### Option 2: Direct SQL Execution
-1. Connect to your Vercel Postgres database
-2. Run the SQL file directly:
-   ```bash
-   psql $DATABASE_URL -f migrations/add_admin_system_tables.sql
-   ```
+Run the SQL file directly:
+```bash
+psql $DATABASE_URL -f migrations/add_admin_system_tables.sql
+```
 
 ### Post-Migration Steps
 

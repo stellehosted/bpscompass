@@ -5,44 +5,10 @@ npm-debug.log*
 
 # Production builds
 .next/
-build/
-out/
 tsconfig.tsbuildinfo
-working/
-
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Runtime data
-pids
-*.pid
-*.seed
-*.pid.lock
-
-# Optional npm cache directory
-.npm
-
-# Output of 'npm pack'
-*.tgz
 
 # Next.js build output
 .next
-
-# Nuxt.js build / generate output
-.nuxt
-dist
-
-# Temporary folders
-tmp/
-temp/
-
-# Logs
-logs
-*.log
 
 # Editor directories and files
 .vscode/
@@ -62,3 +28,5 @@ Thumbs.db
 
 # Local development
 *.local
+.env.local
+working/
