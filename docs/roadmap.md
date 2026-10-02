@@ -1,3 +1,11 @@
+# Priorities
+1. Popup to install app & enable notifications during sign up
+2. Add screenshots to Q&A
+3. Feedback Page (Same as Post, but for all users)
+4. Remove Class of '26
+5. Redesign "Manage Members"
+
+---
 # Security
 ## Moderation (Admin Panel)
 - Need a report button on posts like a flag
@@ -22,10 +30,8 @@
 ---
 # Tweaks & Fixes
 - Attending/not attending text next to icons
-- Popup to install app & enable notifications during sign up
 - My Clubs vs. All Club notifications
 - Change spinner to a compass lol
-- Add screenshots to Q&A
 
 ---
 # Questions
@@ -35,6 +41,5 @@
     - Toggle: Yes
     - Actually reply?: Maybe, maybe not
     - Polls
-- Feedback Page: Google Form or on-site feedback interface?
 
 Obviously we don't have infinite server power so if files and stuff are hosted on our site, we might run into compute limitations pretty quickly. In that case it'd be best to offload data storage to something like Google Drive and just integrate links into our platform.

@@ -6,49 +6,7 @@ This document outlines the specifications for implementing a multi-role admin sy
 ---
 
 ## 1. Role & Permission System
-
-### User Roles Hierarchy
-
-**Admin Coordinators**
-- Full system access
-- Create and manage all clubs
-- Assign/remove sponsors from clubs
-- Moderate content (delete posts in any club)
-- Access admin dashboard and analytics
-- Manage user roles (promote coordinators, etc.)
-
-**Club Sponsor (Teacher)**
-- Verified via Azure AD (userType: None)
-- Claim clubs as sponsor (not president)
-- View and moderate posts from sponsored clubs
-- Approve/reject presidency transfers in their clubs
-- Approve/reject leadership role changes in their clubs
-- View club analytics for their clubs
-- Cannot create posts (observation role)
-
-**Club President (Multiple per club)**
-- Manage club information
-- Create and manage posts
-- Add/remove members
-- Promote members to officer/leader roles
-- Request presidency transfers (requires sponsor approval)
-- All presidents have equal permissions
-
-**Club Officer/Leader**
-- Create posts on behalf of club
-- Limited club management
-- Cannot change leadership structure
-
-**Member**
-- Join clubs freely (no approval needed)
-- Like and interact with posts
-- View club information
-
-### Permission Matrix
-
-The first seven rows are defined in code, in `lib/auth/permissions.ts`. Edit the map there and both the API and the club page pick it up. The remaining rows are still enforced by their own routes.
-
-Legend: ✓ allowed, - not allowed. **Enforced** says where the rule is checked: *server* (the API rejects it), *UI only* (the button is hidden but the API has no check), or *not built*.
+Edit `lib/auth/permissions.ts` and both the API and the club page pick it up.
 
 | Action | Member | Officer | Vice President | Presidents | Teachers | Coordinator |
 |--------|--------|---------|----------------|-----------|---------|-------------|
