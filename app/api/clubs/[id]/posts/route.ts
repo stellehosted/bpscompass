@@ -3,7 +3,7 @@ import pool from '@/lib/db'
 import { requireUser } from '@/lib/auth/session'
 import { checkPostRateLimit } from '@/lib/security/input-validator'
 import { getClientIdentifier } from '@/lib/security/api-middleware'
-import { validateUrl } from '@/lib/security/input-validator'
+import { validateImageUrl } from '@/lib/security/input-validator'
 import { createNotificationsForClubMembers } from '@/lib/services/notifications'
 import { requireClubPermission } from '@/lib/auth/club-permissions'
 
@@ -128,7 +128,7 @@ export async function POST(
       )
     }
 
-    if (imageUrl && (typeof imageUrl !== 'string' || !validateUrl(imageUrl).valid)) {
+    if (imageUrl && (typeof imageUrl !== 'string' || !validateImageUrl(imageUrl).valid)) {
       return NextResponse.json(
         { success: false, error: 'Invalid image URL' },
         { status: 400 }

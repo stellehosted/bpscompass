@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
 import { requireUser } from '@/lib/auth/session'
 import { requireClubPermission } from '@/lib/auth/club-permissions'
-import { validateUrl } from '@/lib/security/input-validator'
+import { validateImageUrl } from '@/lib/security/input-validator'
 
 // GET /api/clubs/[id] - Get a specific club with details
 export async function GET(
@@ -93,7 +93,7 @@ export async function PUT(
       (body.description !== undefined && (typeof body.description !== 'string' || body.description.length > 2000)) ||
       (body.meetingTime && (typeof body.meetingTime !== 'string' || body.meetingTime.length > 200)) ||
       (body.location && (typeof body.location !== 'string' || body.location.length > 200)) ||
-      (body.imageUrl && (typeof body.imageUrl !== 'string' || !validateUrl(body.imageUrl).valid))
+      (body.imageUrl && (typeof body.imageUrl !== 'string' || !validateImageUrl(body.imageUrl).valid))
     ) {
       return NextResponse.json(
         { success: false, error: 'Invalid club details' },

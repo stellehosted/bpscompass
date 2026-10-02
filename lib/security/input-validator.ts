@@ -180,6 +180,23 @@ export function validateUrl(url: string): { valid: boolean; sanitized: string; e
 }
 
 /**
+ * Validate an image URL stored for a club or post: an http(s) URL, or a path on this site
+ * (like /uploads/mikuClub.jpg). Empty is allowed (no image).
+ */
+export function validateImageUrl(url: string): { valid: boolean; sanitized: string; error?: string } {
+  if (!url) {
+    return { valid: true, sanitized: '' }
+  }
+
+  // "//host/x" and "/\\host/x" look like paths but browsers treat them as another site
+  if (url.startsWith('/') && !url.startsWith('//') && !url.includes('\\') && url.length <= 2048) {
+    return { valid: true, sanitized: url }
+  }
+
+  return validateUrl(url)
+}
+
+/**
  * Validate role
  */
 export function validateRole(role: string): { valid: boolean; sanitized: string; error?: string } {

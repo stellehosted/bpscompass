@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
 import { requireUser } from '@/lib/auth/session'
 import { requireClubPermission } from '@/lib/auth/club-permissions'
-import { validateUrl } from '@/lib/security/input-validator'
+import { validateImageUrl } from '@/lib/security/input-validator'
 
 // PUT /api/clubs/[id]/update - Update club information (needs the editClub permission)
 export async function PUT(
@@ -32,7 +32,7 @@ export async function PUT(
       typeof description !== 'string' || description.length > 2000 ||
       (meetingTime && (typeof meetingTime !== 'string' || meetingTime.length > 200)) ||
       (location && (typeof location !== 'string' || location.length > 200)) ||
-      (imageUrl && (typeof imageUrl !== 'string' || !validateUrl(imageUrl).valid))
+      (imageUrl && (typeof imageUrl !== 'string' || !validateImageUrl(imageUrl).valid))
     ) {
       return NextResponse.json(
         { success: false, error: 'Invalid club details' },
