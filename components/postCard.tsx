@@ -108,7 +108,7 @@ export function PostCard({
         </p>
 
         {post.image_url && (
-          <div className="rounded-lg overflow-hidden">
+          <div className="rounded-[16px] overflow-hidden">
             <img
               src={post.image_url}
               alt="Post content"

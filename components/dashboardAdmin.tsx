@@ -1,5 +1,7 @@
 "use client"
 
+import { notify } from "@/lib/notify"
+import { confirmDialog } from "@/lib/confirm"
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -144,7 +146,7 @@ export function AdminDashboard({ userId }: { userId: string }) {
 
   const handleCreateClub = async () => {
     if (!newClub.name || !newClub.description) {
-      alert("Please fill in all required fields")
+      notify.error("Please fill in all required fields")
       return
     }
 
@@ -157,7 +159,7 @@ export function AdminDashboard({ userId }: { userId: string }) {
       })
 
       if (response.ok) {
-        alert("Club created successfully!")
+        notify.success("Club created successfully!")
         setShowCreateClub(false)
         setNewClub({
           name: "",
@@ -169,11 +171,11 @@ export function AdminDashboard({ userId }: { userId: string }) {
         setClubsVersion((v) => v + 1)
       } else {
         const data = await response.json()
-        alert(data.error || "Failed to create club")
+        notify.error(data.error || "Failed to create club")
       }
     } catch (error) {
       console.error("Error creating club:", error)
-      alert("Failed to create club")
+      notify.error("Failed to create club")
     } finally {
       setCreatingClub(false)
     }
@@ -198,17 +200,17 @@ export function AdminDashboard({ userId }: { userId: string }) {
       )
 
       if (response.ok) {
-        alert("President removed and club is now unclaimed!")
+        notify.success("President removed and club is now unclaimed!")
         setMemberToRemove(null)
         await loadClubs()
         await loadClubMembers(selectedClub.id)
       } else {
         const data = await response.json()
-        alert(data.error || "Failed to remove president")
+        notify.error(data.error || "Failed to remove president")
       }
     } catch (error) {
       console.error("Error removing president:", error)
-      alert("Failed to remove president")
+      notify.error("Failed to remove president")
     } finally {
       setRemovingMember(false)
     }
@@ -217,9 +219,13 @@ export function AdminDashboard({ userId }: { userId: string }) {
   const handleKickMember = async (member: ClubMember) => {
     if (!selectedClub) return
 
-    if (!confirm(`Are you sure you want to remove ${member.name} from ${selectedClub.name}?`)) {
-      return
-    }
+    const confirmed = await confirmDialog({
+      title: "Remove member?",
+      description: `Are you sure you want to remove ${member.name} from ${selectedClub.name}?`,
+      confirmLabel: "Remove",
+      destructive: true,
+    })
+    if (!confirmed) return
 
     try {
       const response = await fetch(
@@ -235,16 +241,16 @@ export function AdminDashboard({ userId }: { userId: string }) {
       )
 
       if (response.ok) {
-        alert("Member removed successfully!")
+        notify.success("Member removed successfully!")
         await loadClubMembers(selectedClub.id)
         await loadClubs()
       } else {
         const data = await response.json()
-        alert(data.error || "Failed to remove member")
+        notify.error(data.error || "Failed to remove member")
       }
     } catch (error) {
       console.error("Error kicking member:", error)
-      alert("Failed to remove member")
+      notify.error("Failed to remove member")
     }
   }
 
@@ -392,14 +398,14 @@ export function AdminDashboard({ userId }: { userId: string }) {
                       setSelectedClub(club)
                       loadClubMembers(club.id)
                     }}
-                    className={`w-full text-left p-3 rounded-lg border transition-colors ${
+                    className={`w-full text-left p-3 rounded-[16px] border transition-colors ${
                       selectedClub?.id === club.id
                         ? "border-primary bg-primary/5"
                         : "border-transparent hover:bg-muted"
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      {club.image_url && <img src={club.image_url} alt={club.name} className="h-10 w-10 rounded-lg object-cover" />}
+                      {club.image_url && <img src={club.image_url} alt={club.name} className="h-10 w-10 rounded-[16px] object-cover" />}
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{club.name}</p>
                         <p className="text-xs text-muted-foreground">
@@ -445,7 +451,7 @@ export function AdminDashboard({ userId }: { userId: string }) {
                     {clubMembers.map((member) => (
                       <div
                         key={member.id}
-                        className="flex items-center justify-between p-3 rounded-lg border"
+                        className="flex items-center justify-between p-3 rounded-[16px] border"
                       >
                         <div className="flex items-center gap-3">
                           <div>

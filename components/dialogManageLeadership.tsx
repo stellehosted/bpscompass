@@ -1,20 +1,20 @@
 "use client"
 
+import { notify } from "@/lib/notify"
+import { confirmDialog } from "@/lib/confirm"
 import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Badge } from "@/components/ui/badge"
-import { UserCog, Crown, Users, Trash2, Plus } from "lucide-react"
+import { UserCog } from "lucide-react"
 
 interface ClubMember {
   id: string
@@ -34,10 +34,25 @@ interface ManageLeadershipDialogProps {
 }
 
 const LEADERSHIP_ROLES = [
-  { value: 'president', label: 'Co-President', icon: Crown },
-  { value: 'vice_president', label: 'Vice President', icon: UserCog },
-  { value: 'officer', label: 'Officer', icon: Users },
+  { value: 'president', label: 'Co-President' },
+  { value: 'vice_president', label: 'Vice President' },
+  { value: 'officer', label: 'Officer' },
 ]
+
+// Names are stored as "First Last"; sort on the last word, then the full name as a tiebreaker
+const lastName = (name: string) => name.trim().split(/\s+/).pop() ?? ""
+
+// Display order in the Leadership list, independent of the order of LEADERSHIP_ROLES
+const ROLE_RANK = ['president', 'vice_president', 'officer']
+
+const compareLeaders = (a: ClubMember, b: ClubMember) => {
+  const rankDiff = ROLE_RANK.indexOf(a.role) - ROLE_RANK.indexOf(b.role)
+  if (rankDiff !== 0) return rankDiff
+  return (
+    lastName(a.name).localeCompare(lastName(b.name), undefined, { sensitivity: 'base' }) ||
+    a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+  )
+}
 
 // Callers decide who may see this (the manageMembers permission, see lib/auth/permissions.ts).
 export function ManageLeadershipDialog({ clubId, clubName, currentUserId, onUpdateSuccess }: ManageLeadershipDialogProps) {
@@ -46,7 +61,7 @@ export function ManageLeadershipDialog({ clubId, clubName, currentUserId, onUpda
   const [leaders, setLeaders] = useState<ClubMember[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [newLeaderEmail, setNewLeaderEmail] = useState("")
-  const [newLeaderRole, setNewLeaderRole] = useState("officer")
+  const [newLeaderRole, setNewLeaderRole] = useState("member")
 
   const loadMembers = async () => {
     try {
@@ -61,7 +76,7 @@ export function ManageLeadershipDialog({ clubId, clubName, currentUserId, onUpda
         const leadersList = allMembers.filter((member: ClubMember) => leaderRoles.includes(member.role))
         const membersList = allMembers.filter((member: ClubMember) => !leaderRoles.includes(member.role))
         
-        setLeaders(leadersList)
+        setLeaders(leadersList.sort(compareLeaders))
         setMembers(membersList)
       }
     } catch (error) {
@@ -88,28 +103,35 @@ export function ManageLeadershipDialog({ clubId, clubName, currentUserId, onUpda
       if (response.ok) {
         await loadMembers()
         onUpdateSuccess?.()
-        alert(`Member promoted to ${LEADERSHIP_ROLES.find(r => r.value === role)?.label} successfully!`)
+        notify.success(`Member promoted to ${LEADERSHIP_ROLES.find(r => r.value === role)?.label} successfully!`)
       } else {
         const data = await response.json()
-        alert(data.error || "Failed to promote member")
+        notify.error(data.error || "Failed to promote member")
       }
     } catch (error) {
       console.error("Error promoting member:", error)
-      alert("Failed to promote member. Please try again.")
+      notify.error("Failed to promote member. Please try again.")
     }
   }
 
   const handleDemoteLeader = async (leaderId: string, leaderRole: string) => {
     if (leaderId === currentUserId) {
-      alert("You cannot demote yourself. Use the transfer presidency feature instead.")
+      notify.error("You cannot demote yourself. Use the transfer presidency feature instead.")
       return
     }
 
     const confirmMessage = leaderRole === 'president' 
-      ? "Are you sure you want to remove this co-president? They will become a regular member."
+      ? "Are you sure you want to demote this co-president? They will become a regular member."
       : "Are you sure you want to demote this leader to a regular member?"
 
-    if (confirm(confirmMessage)) {
+    const confirmed = await confirmDialog({
+      title: leaderRole === 'president' ? "Demote co-president?" : "Demote leader?",
+      description: confirmMessage,
+      confirmLabel: "Demote",
+      destructive: true,
+    })
+
+    if (confirmed) {
       try {
         const response = await fetch(`/api/clubs/${clubId}/members/${leaderId}/role`, {
           method: "PUT",
@@ -120,26 +142,53 @@ export function ManageLeadershipDialog({ clubId, clubName, currentUserId, onUpda
         if (response.ok) {
           await loadMembers()
           onUpdateSuccess?.()
-          alert("Leader demoted successfully!")
+          notify.success("Leader demoted successfully!")
         } else {
           const data = await response.json()
-          alert(data.error || "Failed to demote leader")
+          notify.error(data.error || "Failed to demote leader")
         }
       } catch (error) {
         console.error("Error demoting leader:", error)
-        alert("Failed to demote leader. Please try again.")
+        notify.error("Failed to demote leader. Please try again.")
       }
     }
   }
 
-  const handleAddLeaderByEmail = async () => {
+  const handleRemoveMember = async (member: ClubMember) => {
+    const confirmed = await confirmDialog({
+      title: "Remove member?",
+      description: `Are you sure you want to remove ${member.name} from ${clubName}?`,
+      confirmLabel: "Remove",
+      destructive: true,
+    })
+    if (!confirmed) return
+
+    try {
+      const response = await fetch(`/api/clubs/${clubId}/members/${member.user_id}`, { method: "DELETE" })
+
+      if (response.ok) {
+        await loadMembers()
+        onUpdateSuccess?.()
+        notify.success("Member removed successfully!")
+      } else {
+        const data = await response.json()
+        notify.error(data.error || "Failed to remove member")
+      }
+    } catch (error) {
+      console.error("Error removing member:", error)
+      notify.error("Failed to remove member. Please try again.")
+    }
+  }
+
+  const handleAddByEmail = async () => {
     if (!newLeaderEmail.trim()) {
-      alert("Please enter an email address")
+      notify.error("Please enter an email address")
       return
     }
 
     try {
-      const response = await fetch(`/api/clubs/${clubId}/members/add-leader`, {
+      const addingMember = newLeaderRole === "member"
+      const response = await fetch(`/api/clubs/${clubId}/members/${addingMember ? "add-member" : "add-leader"}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -150,24 +199,24 @@ export function ManageLeadershipDialog({ clubId, clubName, currentUserId, onUpda
       })
 
       if (response.ok) {
+        const data = await response.json()
         await loadMembers()
         onUpdateSuccess?.()
         setNewLeaderEmail("")
-        setNewLeaderRole("officer")
-        alert("Leader added successfully!")
+        setNewLeaderRole("member")
+        notify.success(
+          data.updated
+            ? "Role updated successfully!"
+            : addingMember ? "Member added successfully!" : "Leader added successfully!"
+        )
       } else {
         const data = await response.json()
-        alert(data.error || "Failed to add leader")
+        notify.error(data.error || "Failed to add")
       }
     } catch (error) {
-      console.error("Error adding leader:", error)
-      alert("Failed to add leader. Please try again.")
+      console.error("Error adding by email:", error)
+      notify.error("Failed to add. Please try again.")
     }
-  }
-
-  const getRoleIcon = (role: string) => {
-    const roleConfig = LEADERSHIP_ROLES.find(r => r.value === role)
-    return roleConfig?.icon || Users
   }
 
   const getRoleLabel = (role: string) => {
@@ -177,10 +226,9 @@ export function ManageLeadershipDialog({ clubId, clubName, currentUserId, onUpda
 
   const getRoleBadgeColor = (role: string) => {
     switch (role) {
-      case 'president': return 'bg-sky-100 text-sky-800'
-      case 'vice_president': return 'bg-blue-100 text-blue-800'
-      case 'officer': return 'bg-green-100 text-green-800'
-      default: return 'bg-gray-100 text-gray-800'
+      case 'president': return 'bg-[#7c66bf20] text-[#7c66bf]'
+      case 'vice_president': return 'bg-[#ee799720] text-[#ee7997]'
+      case 'officer': return 'bg-[#0078d720] text-[#0078d7]'
     }
   }
 
@@ -202,22 +250,20 @@ export function ManageLeadershipDialog({ clubId, clubName, currentUserId, onUpda
 
         <div className="space-y-4 sm:space-y-6">
           {/* Leadership */}
-          <div className="space-y-2 sm:space-y-3">
+          <div className="space-y-2 sm:space-y-2">
             <h3 className="text-base sm:text-lg font-semibold">Leadership</h3>
             {leaders.length > 0 ? (
               <div className="space-y-2">
                 {leaders.map((leader) => {
-                  const RoleIcon = getRoleIcon(leader.role)
                   return (
-                    <div key={leader.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 p-2.5 sm:p-3 border rounded-lg">
+                    <div key={leader.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 p-2.5 sm:p-3 bg-white rounded-[16px] shadow-hard">
                       <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                         <div className="min-w-0 flex-1">
                           <p className="font-medium text-sm sm:text-base truncate">{leader.name}</p>
                           <p className="text-xs sm:text-sm text-muted-foreground truncate">{leader.email}</p>
                         </div>
                         <Badge className={`${getRoleBadgeColor(leader.role)} text-xs flex-shrink-0`}>
-                          <RoleIcon className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
-                          <span className="hidden xs:inline">{getRoleLabel(leader.role)}</span>
+                          {getRoleLabel(leader.role)}
                         </Badge>
                       </div>
                       {leader.user_id !== currentUserId && (
@@ -227,8 +273,7 @@ export function ManageLeadershipDialog({ clubId, clubName, currentUserId, onUpda
                           onClick={() => handleDemoteLeader(leader.user_id, leader.role)}
                           className="h-8 text-xs sm:text-sm w-full sm:w-auto"
                         >
-                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                          {leader.role === 'president' ? 'Remove' : 'Demote'}
+                          Demote
                         </Button>
                       )}
                     </div>
@@ -241,32 +286,38 @@ export function ManageLeadershipDialog({ clubId, clubName, currentUserId, onUpda
           </div>
 
           {/* Promote Members */}
-          <div className="space-y-2 sm:space-y-3">
+          <div className="space-y-2 sm:space-y-2">
             <h3 className="text-base sm:text-lg font-semibold">Promote Members</h3>
             {members.length > 0 ? (
               <div className="space-y-2">
                 {members.map((member) => (
-                  <div key={member.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 p-2.5 sm:p-3 border rounded-lg">
+                  <div key={member.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3 p-2.5 sm:p-3 bg-white rounded-[16px] shadow-hard">
                     <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-sm sm:text-base truncate">{member.name}</p>
-                        <p className="text-xs sm:text-sm text-muted-foreground truncate">{member.email}</p>
                       </div>
-                      <Badge variant="outline" className="text-xs flex-shrink-0">Member</Badge>
                     </div>
-                    <div className="flex gap-1 flex-wrap sm:flex-nowrap">
-                      {LEADERSHIP_ROLES.map((role) => (
-                        <Button
-                          key={role.value}
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handlePromoteMember(member.user_id, role.value)}
-                          className="h-8 text-xs flex-1 sm:flex-none"
-                        >
-                          <span className="hidden sm:inline">{role.label}</span>
-                          <span className="sm:hidden">{role.value === 'vice_president' ? 'VP' : role.value === 'president' ? 'Pres' : role.label}</span>
-                        </Button>
-                      ))}
+                    <div className="flex gap-2">
+                      <Select value="" onValueChange={(role) => handlePromoteMember(member.user_id, role)}>
+                        <SelectTrigger className="h-8 text-xs sm:text-sm w-full sm:w-36">
+                          <SelectValue placeholder="Position" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {LEADERSHIP_ROLES.map((role) => (
+                            <SelectItem key={role.value} value={role.value}>
+                              {role.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleRemoveMember(member)}
+                        className="h-8 text-xs sm:text-sm w-full sm:w-auto"
+                      >
+                        Remove
+                      </Button>
                     </div>
                   </div>
                 ))}
@@ -277,12 +328,11 @@ export function ManageLeadershipDialog({ clubId, clubName, currentUserId, onUpda
           </div>
         </div>
         <p></p>
-        {/* Add Leader by Email */}
+        {/* Add Member or Leader by Email */}
           <div className="space-y-1">
-            <h3 className="text-base sm:text-lg font-semibold">Add Leadership</h3>
+            <h3 className="text-base sm:text-lg font-semibold">Add by Email</h3>
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="flex-1">
-                <Label htmlFor="leader-email" className="text-sm">Email</Label>
                 <Input
                   id="leader-email"
                   type="email"
@@ -293,12 +343,12 @@ export function ManageLeadershipDialog({ clubId, clubName, currentUserId, onUpda
                 />
               </div>
               <div className="w-full sm:w-40">
-                <Label htmlFor="leader-role" className="text-sm">Role</Label>
                 <Select value={newLeaderRole} onValueChange={setNewLeaderRole}>
                   <SelectTrigger className="h-9 sm:h-8 text-sm">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="member">Member</SelectItem>
                     {LEADERSHIP_ROLES.map((role) => (
                       <SelectItem key={role.value} value={role.value}>
                         {role.label}
@@ -307,12 +357,9 @@ export function ManageLeadershipDialog({ clubId, clubName, currentUserId, onUpda
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-end">
-                <Button onClick={handleAddLeaderByEmail} disabled={!newLeaderEmail.trim()} className="w-full sm:w-auto h-9 sm:h-8 text-sm">
-                  <Plus className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1" />
+                <Button onClick={handleAddByEmail} disabled={!newLeaderEmail.trim()} className="w-full sm:w-auto h-8 text-sm">
                   Add
                 </Button>
-              </div>
             </div>
           </div>
       </DialogContent>

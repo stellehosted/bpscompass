@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from "react"
+import { confirmDialog } from "@/lib/confirm"
+import { notify } from "@/lib/notify"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -18,8 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Crown, AlertTriangle } from "lucide-react"
+import { Crown } from "lucide-react"
 
 interface Member {
   id: string
@@ -49,7 +50,6 @@ export function TransferPresidencyDialog({
   const [open, setOpen] = useState(false)
   const [selectedMember, setSelectedMember] = useState<string>("")
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
   // Filter out current user and get eligible members. Sponsors are teachers,
   // not students, so they can't become president.
@@ -61,12 +61,11 @@ export function TransferPresidencyDialog({
 
   const handleTransfer = async () => {
     if (!selectedMember) {
-      setError("Please select a new president")
+      notify.error("Please select a new president")
       return
     }
 
     setLoading(true)
-    setError(null)
 
     try {
       const response = await fetch(`/api/clubs/${clubId}/leave-presidency`, {
@@ -84,26 +83,27 @@ export function TransferPresidencyDialog({
         setOpen(false)
         onSuccess()
       } else {
-        setError(data.error || "Failed to transfer presidency")
+        notify.error(data.error || "Failed to transfer presidency")
       }
     } catch (err) {
-      setError("An error occurred. Please try again.")
+      notify.error("An error occurred. Please try again.")
     } finally {
       setLoading(false)
     }
   }
 
   const handleUnclaimAndLeave = async () => {
-    if (!confirm(
-      isLastPresident
+    const confirmed = await confirmDialog({
+      title: isLastPresident ? "Unclaim and leave?" : "Leave presidency?",
+      description: isLastPresident
         ? `Are you sure you want to unclaim ${clubName} and leave? The club will become available for others to claim.`
-        : `Are you sure you want to leave ${clubName}? The other ${otherPresidents === 1 ? "president stays" : "presidents stay"} in charge.`
-    )) {
-      return
-    }
+        : `Are you sure you want to leave ${clubName}? The other ${otherPresidents === 1 ? "president stays" : "presidents stay"} in charge.`,
+      confirmLabel: isLastPresident ? "Unclaim and leave" : "Leave",
+      destructive: true,
+    })
+    if (!confirmed) return
 
     setLoading(true)
-    setError(null)
 
     try {
       const response = await fetch(`/api/clubs/${clubId}/leave-presidency`, {
@@ -121,10 +121,10 @@ export function TransferPresidencyDialog({
         setOpen(false)
         onSuccess()
       } else {
-        setError(data.error || "Failed to leave club")
+        notify.error(data.error || "Failed to leave club")
       }
     } catch (err) {
-      setError("An error occurred. Please try again.")
+      notify.error("An error occurred. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -149,13 +149,6 @@ export function TransferPresidencyDialog({
         </DialogHeader>
 
         <div className="space-y-4 py-4">
-          {error && (
-            <Alert variant="destructive">
-              <AlertTriangle className="h-4 w-4" />
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-
           {eligibleMembers.length > 0 ? (
             <>
               <div className="space-y-2">
@@ -194,11 +187,9 @@ export function TransferPresidencyDialog({
               </div>
             </>
           ) : (
-            <Alert>
-              <AlertDescription>
-                There are no other members to transfer presidency to. You can only unclaim the club.
-              </AlertDescription>
-            </Alert>
+            <p className="text-sm text-muted-foreground">
+              There are no other members to transfer presidency to. You can only unclaim the club.
+            </p>
           )}
 
           <div className="space-y-2">

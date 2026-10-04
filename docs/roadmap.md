@@ -1,9 +1,9 @@
 # Priorities
-1. Popup to install app & enable notifications during sign up
+1. ~~Popup to install app & enable notifications during sign up~~
 2. Add screenshots to Q&A
 3. Feedback Page (Same as Post, but for all users)
 4. Remove Class of '26
-5. Redesign "Manage Members"
+5. ~~Redesign "Manage Members"~~
 
 ---
 # Security

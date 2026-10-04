@@ -1,5 +1,7 @@
 "use client"
 
+import { notify } from "@/lib/notify"
+import { confirmDialog } from "@/lib/confirm"
 import { useState, useEffect, useRef } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Users, Loader2, Newspaper } from "lucide-react"
@@ -134,7 +136,7 @@ export function HomeContent({ canDeleteAny = false }: { canDeleteAny?: boolean }
 
   const handleLike = async (postId: string, isLiked: boolean) => {
     if (!user?.id) {
-      alert("Please log in to like posts")
+      notify.error("Please log in to like posts")
       return
     }
 
@@ -179,7 +181,13 @@ export function HomeContent({ canDeleteAny = false }: { canDeleteAny?: boolean }
 
   const handleDelete = async (postId: string) => {
     if (!user?.id) return
-    if (!confirm("Are you sure you want to delete this post?")) return
+    const confirmed = await confirmDialog({
+      title: "Delete post?",
+      description: "Are you sure you want to delete this post?",
+      confirmLabel: "Delete",
+      destructive: true,
+    })
+    if (!confirmed) return
 
     try {
       const response = await fetch(`/api/posts/${postId}?userId=${encodeURIComponent(user.id)}`, {
@@ -189,11 +197,11 @@ export function HomeContent({ canDeleteAny = false }: { canDeleteAny?: boolean }
         setPosts((prev) => prev.filter((p) => p.id !== postId))
       } else {
         const data = await response.json()
-        alert(data.error || "Failed to delete post")
+        notify.error(data.error || "Failed to delete post")
       }
     } catch (error) {
       console.error("Error deleting post:", error)
-      alert("Failed to delete post. Please try again.")
+      notify.error("Failed to delete post. Please try again.")
     }
   }
 

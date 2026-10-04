@@ -1,5 +1,6 @@
 "use client"
 
+import { notify } from "@/lib/notify"
 import { useState, useEffect, useCallback, memo } from "react"
 import { Button } from "@/components/ui/button"
 import {
@@ -46,11 +47,11 @@ export const ManageTagsDialog = memo(function ManageTagsDialog({
     const trimmedTag = newTag.trim().toLowerCase()
     if (!trimmedTag) return
     if (tags.includes(trimmedTag)) {
-      alert("Tag already exists")
+      notify.error("Tag already exists")
       return
     }
     if (tags.length >= 10) {
-      alert("Maximum 10 tags allowed")
+      notify.error("Maximum 10 tags allowed")
       return
     }
     setTags([...tags, trimmedTag])
@@ -76,11 +77,11 @@ export const ManageTagsDialog = memo(function ManageTagsDialog({
         onUpdateSuccess()
       } else {
         const data = await response.json()
-        alert(data.error || "Failed to update tags")
+        notify.error(data.error || "Failed to update tags")
       }
     } catch (error) {
       console.error("Error updating tags:", error)
-      alert("Failed to update tags. Please try again.")
+      notify.error("Failed to update tags. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -104,7 +105,7 @@ export const ManageTagsDialog = memo(function ManageTagsDialog({
           {/* Current Tags */}
           <div className="space-y-1.5 sm:space-y-2">
             <Label className="text-sm">Current Tags ({tags.length}/10)</Label>
-            <div className="flex flex-wrap gap-1.5 sm:gap-2 min-h-[60px] p-2.5 sm:p-3 border rounded-lg">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 min-h-[60px] p-2.5 sm:p-3 bg-white rounded-[16px] shadow-hard">
               {tags.length > 0 ? (
                 tags.map((tag) => (
                   <Badge key={tag} variant="secondary" className="gap-1 text-xs">

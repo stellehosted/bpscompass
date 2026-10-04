@@ -13,7 +13,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -75,11 +74,6 @@ export default function ComponentGalleryPage() {
     <TooltipProvider>
       <div className="mx-auto max-w-5xl space-y-10 p-8">
         <h1 className="text-3xl font-bold tracking-wide">UI Component Gallery</h1>
-        <p className="text-muted-foreground">
-          Every primitive still in active use in components/ui, rendered with sample data. Unused
-          primitives were removed from the codebase; a handful (Sheet, Skeleton, Toast, Tooltip) were
-          kept in reserve for near-term features.
-        </p>
 
         <Section title="button.tsx">
           <Button>Default</Button>
@@ -141,17 +135,6 @@ export default function ComponentGalleryPage() {
               onLike={() => {}}
             />
           </div>
-        </Section>
-
-        <Section title="alert.tsx">
-          <Alert className="w-96">
-            <AlertTitle>Heads up</AlertTitle>
-            <AlertDescription>This is a standard alert message.</AlertDescription>
-          </Alert>
-          <Alert variant="destructive" className="w-96">
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>Something went wrong.</AlertDescription>
-          </Alert>
         </Section>
 
         <Section title="input.tsx / textarea.tsx / label.tsx">
