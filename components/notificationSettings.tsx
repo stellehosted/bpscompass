@@ -7,6 +7,13 @@ import { Label } from "@/components/ui/label"
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Users, Globe } from "lucide-react"
+import {
+  disablePush,
+  enablePush,
+  getExistingSubscription,
+  getPushErrorMessage,
+  isPushSupported,
+} from "@/lib/push-client"
 
 interface NotificationPreferences {
   push_enabled: boolean
@@ -29,13 +36,7 @@ export function NotificationSettings() {
   useEffect(() => {
     if (!user) return
 
-    // Check if push notifications are supported. Android WebViews expose
-    // serviceWorker but not always Notification, so check all three.
-    if (
-      'serviceWorker' in navigator &&
-      'PushManager' in window &&
-      'Notification' in window
-    ) {
+    if (isPushSupported()) {
       setPushSupported(true)
       setPermission(Notification.permission)
       checkPushSubscription()
@@ -46,9 +47,7 @@ export function NotificationSettings() {
 
   const checkPushSubscription = async () => {
     try {
-      const registration = await navigator.serviceWorker.ready
-      const subscription = await registration.pushManager.getSubscription()
-      setPushSubscribed(!!subscription)
+      setPushSubscribed(!!(await getExistingSubscription()))
     } catch (error) {
       console.error('Error checking push subscription:', error)
     }
@@ -94,88 +93,20 @@ export function NotificationSettings() {
     }
   }
 
-  const saveSubscription = async (subscription: PushSubscription) => {
-    const response = await fetch('/api/notifications/subscribe', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        userId: user!.id,
-        subscription: subscription.toJSON(),
-      }),
-    })
-
-    if (!response.ok) {
-      throw new Error(`Server rejected the subscription (HTTP ${response.status})`)
-    }
-  }
-
   const subscribeToPush = async () => {
     if (!user || !pushSupported || pushBusy) return
 
     setPushError(null)
-
-    const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
-    if (!vapidKey) {
-      setPushError(getPushErrorMessage('unconfigured'))
-      return
-    }
-
-    // Ask for permission FIRST, before any `await` that could outlive the tap.
-    // Chrome and Firefox on Android require transient user activation for
-    // requestPermission(); awaiting service worker registration beforehand
-    // burns that activation and the prompt silently never appears. Safari on
-    // iOS is lenient here, which is why this path only ever failed on Android.
-    let result: NotificationPermission
-    try {
-      result = await Notification.requestPermission()
-    } catch (error) {
-      console.error('Error requesting notification permission:', error)
-      setPushError(getPushErrorMessage('failed', error))
-      return
-    }
-
-    setPermission(result)
-    if (result !== 'granted') {
-      setPushError(getPushErrorMessage(result === 'denied' ? 'denied' : 'dismissed'))
-      return
-    }
-
     setPushBusy(true)
     try {
-      // Reuse an existing registration when there is one. register() resolves
-      // before the worker activates, so `ready` is what we actually need.
-      const registration =
-        (await navigator.serviceWorker.getRegistration('/')) ||
-        (await navigator.serviceWorker.register('/sw.js'))
-      await navigator.serviceWorker.ready
+      const result = await enablePush()
+      setPermission(Notification.permission)
 
-      const applicationServerKey = urlBase64ToUint8Array(vapidKey)
-
-      // Android Chrome keeps a push subscription alive across app restarts and
-      // across VAPID key rotations. subscribe() throws InvalidStateError when a
-      // live subscription was created with a different applicationServerKey, so
-      // drop any stale one rather than letting the whole flow fail.
-      const existing = await registration.pushManager.getSubscription()
-      if (existing) {
-        if (subscriptionUsesKey(existing, applicationServerKey)) {
-          await saveSubscription(existing)
-          setPushSubscribed(true)
-          return
-        }
-        console.log('[Push] Replacing subscription made with a stale VAPID key')
-        await existing.unsubscribe()
+      if (result.ok) {
+        setPushSubscribed(true)
+      } else {
+        setPushError(getPushErrorMessage(result.reason, result.error))
       }
-
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey,
-      })
-
-      await saveSubscription(subscription)
-      setPushSubscribed(true)
-    } catch (error) {
-      console.error('Error subscribing to push:', error)
-      setPushError(getPushErrorMessage('failed', error))
     } finally {
       setPushBusy(false)
     }
@@ -187,16 +118,7 @@ export function NotificationSettings() {
     setPushError(null)
     setPushBusy(true)
     try {
-      const registration = await navigator.serviceWorker.ready
-      const subscription = await registration.pushManager.getSubscription()
-
-      if (subscription) {
-        await subscription.unsubscribe()
-        await fetch(`/api/notifications/subscribe?userId=${user.id}&endpoint=${encodeURIComponent(subscription.endpoint)}`, {
-          method: 'DELETE',
-        })
-      }
-
+      await disablePush()
       setPushSubscribed(false)
     } catch (error) {
       console.error('Error unsubscribing from push:', error)
@@ -325,98 +247,4 @@ export function NotificationSettings() {
       </Card>
     </div>
   )
-}
-
-// Helper function to convert VAPID key
-/**
- * Compare the key an existing subscription was created with against the key we
- * are about to subscribe with. `options.applicationServerKey` comes back as an
- * ArrayBuffer (the raw 65-byte uncompressed P-256 point), not the base64url
- * string we sent in, so this compares bytes.
- */
-function subscriptionUsesKey(subscription: PushSubscription, key: Uint8Array) {
-  const existingKey = subscription.options?.applicationServerKey
-  if (!existingKey) return false
-
-  const existingBytes = new Uint8Array(existingKey as ArrayBuffer)
-  if (existingBytes.length !== key.length) return false
-
-  return existingBytes.every((byte, i) => byte === key[i])
-}
-
-type PushFailureReason = 'denied' | 'dismissed' | 'unconfigured' | 'failed'
-
-/**
- * Turn a push-setup failure into a message we can actually show the user.
- *
- * `reason` is one of:
- *   'denied'       - the browser returned permission 'denied'. On Android this
- *                    is sticky: Chrome will not re-prompt, the user has to
- *                    clear it in Site settings > Notifications. On iOS they
- *                    have to change it in Settings > Notifications.
- *   'dismissed'    - permission came back 'default' (prompt closed / ignored).
- *                    Retrying is fine here.
- *   'unconfigured' - NEXT_PUBLIC_VAPID_PUBLIC_KEY is missing from the build.
- *                    That is a deploy problem, not something the user can fix.
- *   'failed'       - something threw. `error` is that throwable; useful
- *                    DOMException names include 'NotAllowedError',
- *                    'InvalidStateError' and 'AbortError' (Android Chrome
- *                    raises AbortError when Google Play Services cannot reach
- *                    FCM, e.g. on a de-Googled or offline device).
- */
-function getPushErrorMessage(reason: PushFailureReason, error?: unknown): string {
-  const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent)
-
-  switch (reason) {
-    case 'unconfigured':
-      // Nothing the user can do about a missing build-time key, so don't
-      // explain VAPID to them. The console log is where we go to debug it.
-      return "Push notifications aren't available right now. Please try again later."
-
-    case 'dismissed':
-      return 'Notification permission was dismissed. Tap the switch again to retry.'
-
-    case 'denied':
-      // Terminal state: the browser will not prompt again, so the message has
-      // to be a set of instructions rather than an invitation to retry.
-      return isAndroid
-        ? 'Notifications are blocked for this site. Open your browser menu, then Site settings > Notifications, and allow them for BPS Compass.'
-        : 'Notifications are blocked for this site. Allow them in your browser or device settings, then try again.'
-
-    case 'failed': {
-      const name = (error as Error)?.name
-
-      if (name === 'NotAllowedError') {
-        return 'Your browser blocked the notification request. Check that notifications are allowed for this site.'
-      }
-
-      if (name === 'AbortError') {
-        // Android Chrome raises this when it can't reach FCM through Google
-        // Play Services, which is a device problem rather than an app problem.
-        return "Your device couldn't reach the notification service. Check your connection and try again."
-      }
-
-      if (name === 'InvalidStateError') {
-        return 'An old notification setup is still active. Close and reopen the app, then try again.'
-      }
-
-      // Unknown failure: include the underlying message so a student can read
-      // it back to us, but keep the sentence readable on its own.
-      const detail = (error as Error)?.message
-      return detail
-        ? `Couldn't turn on notifications: ${detail}`
-        : "Couldn't turn on notifications. Please try again."
-    }
-  }
-}
-
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
-  const rawData = window.atob(base64)
-  const outputArray = new Uint8Array(rawData.length)
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i)
-  }
-  return outputArray
 }
