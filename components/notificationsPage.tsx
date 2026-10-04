@@ -181,7 +181,7 @@ export function NotificationsContent() {
                           }}
                         >
                           <div className="flex items-start gap-3">
-                            <div className={`p-2 rounded-lg ${!notification.is_read ? 'bg-primary/10' : 'bg-muted'}`}>
+                            <div className={`p-2 rounded-[16px] ${!notification.is_read ? 'bg-primary/10' : 'bg-muted'}`}>
                               <Icon className={`h-5 w-5 ${!notification.is_read ? 'text-primary' : 'text-muted-foreground'}`} />
                             </div>
                             <div className="flex-1 min-w-0">

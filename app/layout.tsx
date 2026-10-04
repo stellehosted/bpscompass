@@ -5,6 +5,7 @@ import './globals.css'
 import { AuthProvider } from '@/contexts/auth-context'
 import { ThemeProvider } from '@/components/themeProvider'
 import { ServiceWorkerRegister } from '@/components/serviceWorkerRegister'
+import { PwaPrompts } from '@/components/pwaPrompts'
 import { Toaster } from '@/components/ui/toaster'
 import { ConfirmHost } from '@/components/ui/confirm-host'
 
@@ -74,7 +75,10 @@ export default function RootLayout({
           enableSystem={false} // 🔧 make deterministic theme
           disableTransitionOnChange
         >
-          <AuthProvider>{children}</AuthProvider>
+          <AuthProvider>
+            {children}
+            <PwaPrompts />
+          </AuthProvider>
           <Toaster />
           <ConfirmHost />
         </ThemeProvider>
