@@ -297,9 +297,9 @@ export function ManageLeadershipDialog({ clubId, clubName, currentUserId, onUpda
                         <p className="font-medium text-sm sm:text-base truncate">{member.name}</p>
                       </div>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 w-full sm:w-auto">
                       <Select value="" onValueChange={(role) => handlePromoteMember(member.user_id, role)}>
-                        <SelectTrigger className="h-8 text-xs sm:text-sm w-full sm:w-36">
+                        <SelectTrigger className="h-8 text-xs sm:text-sm flex-1 min-w-0 sm:flex-none sm:w-36">
                           <SelectValue placeholder="Position" />
                         </SelectTrigger>
                         <SelectContent>
@@ -314,7 +314,7 @@ export function ManageLeadershipDialog({ clubId, clubName, currentUserId, onUpda
                         variant="outline"
                         size="sm"
                         onClick={() => handleRemoveMember(member)}
-                        className="h-8 text-xs sm:text-sm w-full sm:w-auto"
+                        className="h-8 text-xs sm:text-sm flex-1 sm:flex-none"
                       >
                         Remove
                       </Button>
