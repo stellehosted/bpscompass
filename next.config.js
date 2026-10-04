@@ -7,6 +7,7 @@ const isDev = process.env.NODE_ENV !== 'production'
 //    The profile lookup against Microsoft Graph happens on the server, so Graph isn't listed.
 //  - img-src https:: club and post images are URLs that leaders set, from storage or elsewhere
 //  - dev only: 'unsafe-eval' and ws: for hot reload, Vercel's debug analytics script
+
 const contentSecurityPolicy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval' https://va.vercel-scripts.com" : ''}`,
@@ -42,7 +43,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
-  allowedDevOrigins: ['*'],
+
+  allowedDevOrigins: ['*', '*.trycloudflare.com'],
   // Ensure proper bundling for serverless functions
   serverExternalPackages: ['pg', 'pg-native'],
   async headers() {

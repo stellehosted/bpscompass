@@ -1,5 +1,6 @@
 "use client"
 
+import { notify } from "@/lib/notify"
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -74,15 +75,15 @@ export function SponsorDashboard({ userId }: { userId: string }) {
 
       if (response.ok) {
         const data = await response.json()
-        alert(data.message)
+        notify.success(data.message)
         await loadData() // Reload data
       } else {
         const data = await response.json()
-        alert(data.error || "Failed to process request")
+        notify.error(data.error || "Failed to process request")
       }
     } catch (error) {
       console.error("Error processing request:", error)
-      alert("Failed to process request. Please try again.")
+      notify.error("Failed to process request. Please try again.")
     } finally {
       setProcessingRequest(null)
     }
@@ -154,7 +155,7 @@ export function SponsorDashboard({ userId }: { userId: string }) {
           {requests.length > 0 ? (
             <div className="space-y-4">
               {requests.map((request) => (
-                <div key={request.id} className="border rounded-lg p-4 space-y-3">
+                <div key={request.id} className="border rounded-[16px] p-4 space-y-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 flex-1 min-w-0">
                       <div className="flex-1 min-w-0">
@@ -167,7 +168,7 @@ export function SponsorDashboard({ userId }: { userId: string }) {
                     </Badge>
                   </div>
 
-                  <div className="bg-muted rounded-lg p-3 text-sm">
+                  <div className="bg-muted rounded-[16px] p-3 text-sm">
                     <p>
                       <span className="font-medium">{request.requester_name}</span> requested to{" "}
                       <span className="font-medium">{getActionLabel(request.action_type).toLowerCase()}</span> for{" "}
@@ -224,7 +225,7 @@ export function SponsorDashboard({ userId }: { userId: string }) {
                   <Card className="hover:shadow-lg transition-shadow cursor-pointer">
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3">
-                        {club.image_url && <img src={club.image_url} alt={club.name} className="h-16 w-16 rounded-lg object-cover flex-shrink-0" />}
+                        {club.image_url && <img src={club.image_url} alt={club.name} className="h-16 w-16 rounded-[16px] object-cover flex-shrink-0" />}
                         <div className="flex-1 min-w-0">
                           <h3 className="font-semibold truncate">{club.name}</h3>
                           <p className="text-sm text-muted-foreground">

@@ -1,5 +1,6 @@
 "use client"
 
+import { notify } from "@/lib/notify"
 import { useState, useEffect, useCallback, memo } from "react"
 import { Button } from "@/components/ui/button"
 import {
@@ -72,13 +73,13 @@ export const EditClubDialog = memo(function EditClubDialog({
       // Validate file type
       const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
       if (!validTypes.includes(file.type.toLowerCase())) {
-        alert("Please select a valid image file (JPG, JPEG, PNG, WEBP, or GIF)")
+        notify.error("Please select a valid image file (JPG, JPEG, PNG, WEBP, or GIF)")
         return
       }
       
       // Validate file size
       if (file.size > 5 * 1024 * 1024) {
-        alert("Image size must be less than 5MB. Please choose a smaller image.")
+        notify.error("Image size must be less than 5MB. Please choose a smaller image.")
         return
       }
       
@@ -89,7 +90,7 @@ export const EditClubDialog = memo(function EditClubDialog({
         setShowCropDialog(true)
       }
       reader.onerror = () => {
-        alert("Failed to read image file. Please try again.")
+        notify.error("Failed to read image file. Please try again.")
       }
       reader.readAsDataURL(file)
     }
@@ -121,7 +122,7 @@ export const EditClubDialog = memo(function EditClubDialog({
 
   const handleSubmit = useCallback(async () => {
     if (!description.trim()) {
-      alert("Description is required")
+      notify.error("Description is required")
       return
     }
 
@@ -146,7 +147,7 @@ export const EditClubDialog = memo(function EditClubDialog({
         } else {
           const errorData = await uploadResponse.json().catch(() => ({}))
           const errorMessage = errorData.error || "Failed to upload image. Please try again."
-          alert(errorMessage)
+          notify.error(errorMessage)
           setLoading(false)
           return
         }
@@ -170,11 +171,11 @@ export const EditClubDialog = memo(function EditClubDialog({
         onUpdateSuccess()
       } else {
         const data = await response.json()
-        alert(data.error || "Failed to update club")
+        notify.error(data.error || "Failed to update club")
       }
     } catch (error) {
       console.error("Error updating club:", error)
-      alert("Failed to update club. Please try again.")
+      notify.error("Failed to update club. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -239,7 +240,7 @@ export const EditClubDialog = memo(function EditClubDialog({
           <div className="space-y-1.5 sm:space-y-2">
             <Label htmlFor="club-image" className="text-sm">Club Image (Landscape)</Label>
             {!imagePreview ? (
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 sm:p-6 text-center">
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-[16px] p-4 sm:p-6 text-center">
                 <input
                   type="file"
                   id="club-image"
@@ -257,7 +258,7 @@ export const EditClubDialog = memo(function EditClubDialog({
               </div>
             ) : (
               <div className="relative">
-                <div className="aspect-video rounded-lg overflow-hidden border">
+                <div className="aspect-video rounded-[16px] overflow-hidden border">
                   <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                 </div>
                 <Button

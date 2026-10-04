@@ -1,5 +1,7 @@
 "use client"
 
+import { notify } from "@/lib/notify"
+import { confirmDialog } from "@/lib/confirm"
 import { useState, useEffect, useLayoutEffect, useCallback, useMemo } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -114,7 +116,7 @@ export function ClubsContent({ embedded = false, showEdit = false }: { embedded?
       }
     } catch (error) {
       console.error("Error joining/leaving club:", error)
-      alert("Failed to update membership. Please try again.")
+      notify.error("Failed to update membership. Please try again.")
     }
   }, [user?.id, loadClubs])
 
@@ -124,7 +126,13 @@ export function ClubsContent({ embedded = false, showEdit = false }: { embedded?
 
   const handleLeaveSponsor = useCallback(async (clubId: string) => {
     if (!user?.id) return
-    if (!confirm("Are you sure you want to leave your sponsorship of this club?")) return
+    const confirmed = await confirmDialog({
+      title: "Leave sponsorship?",
+      description: "Are you sure you want to leave your sponsorship of this club?",
+      confirmLabel: "Leave",
+      destructive: true,
+    })
+    if (!confirmed) return
 
     try {
       const response = await fetch(`/api/clubs/${clubId}/leave-sponsor`, {
@@ -136,11 +144,11 @@ export function ClubsContent({ embedded = false, showEdit = false }: { embedded?
         await loadClubs()
       } else {
         const data = await response.json()
-        alert(data.error || "Failed to leave sponsorship")
+        notify.error(data.error || "Failed to leave sponsorship")
       }
     } catch (error) {
       console.error("Error leaving sponsorship:", error)
-      alert("Failed to leave sponsorship. Please try again.")
+      notify.error("Failed to leave sponsorship. Please try again.")
     }
   }, [user?.id, loadClubs])
 

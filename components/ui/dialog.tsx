@@ -39,8 +39,10 @@ const DialogContent = React.forwardRef<
       ref={ref}
       className={cn(
         "fixed left-[50%] top-[50%] z-[100] grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 bg-background p-6 shadow-hard duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 rounded-[16px]",
-        // Phones: fill the safe area (inset 1rem on every side) so it still reads as a dialog.
-        "max-sm:left-4 max-sm:right-4 max-sm:top-[calc(1rem+env(safe-area-inset-top))] max-sm:bottom-[calc(1rem+env(safe-area-inset-bottom))] max-sm:translate-x-0 max-sm:translate-y-0 max-sm:w-auto max-sm:h-auto max-sm:max-w-none max-sm:max-h-none max-sm:overflow-y-auto max-sm:content-start max-sm:rounded-[16px] max-sm:slide-in-from-left-0 max-sm:slide-in-from-top-0 max-sm:slide-out-to-left-0 max-sm:slide-out-to-top-0",
+        // Phones: stay centered and content-sized like desktop, but never grow past the safe area
+        // (1rem margin on every side). Taller content scrolls inside the dialog, so only dialogs
+        // that don't fit end up filling the screen.
+        "max-sm:w-[calc(100%-2rem)] max-sm:max-w-none max-sm:max-h-[calc(100dvh-2rem-env(safe-area-inset-top)-env(safe-area-inset-bottom))] max-sm:overflow-y-auto max-sm:content-start",
         className,
       )}
       {...props}
@@ -56,7 +58,7 @@ const DialogContent = React.forwardRef<
 DialogContent.displayName = DialogPrimitive.Content.displayName
 
 const DialogHeader = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => (
-  <div className={cn("flex flex-col space-y-1.5 text-center sm:text-left", className)} {...props} />
+  <div className={cn("flex flex-col space-y-1.5 text-left", className)} {...props} />
 )
 DialogHeader.displayName = "DialogHeader"
 

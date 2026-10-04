@@ -1,3 +1,4 @@
+import { notify } from '@/lib/notify'
 import imageCompression from 'browser-image-compression'
 
 export interface CompressionOptions {
@@ -50,14 +51,14 @@ export async function compressImage(
 export async function validateAndCompressImage(file: File): Promise<File | null> {
   // Check if file is an image
   if (!file.type.startsWith('image/')) {
-    alert('Please select an image file')
+    notify.error('Please select an image file')
     return null
   }
 
   // Check original file size (max 10MB before compression)
   const maxOriginalSize = 10 * 1024 * 1024 // 10MB
   if (file.size > maxOriginalSize) {
-    alert('Image is too large. Please select an image under 10MB.')
+    notify.error('Image is too large. Please select an image under 10MB.')
     return null
   }
 
@@ -71,7 +72,7 @@ export async function validateAndCompressImage(file: File): Promise<File | null>
     return compressedFile
   } catch (error) {
     console.error('Error processing image:', error)
-    alert('Failed to process image. Please try another image.')
+    notify.error('Failed to process image. Please try another image.')
     return null
   }
 }

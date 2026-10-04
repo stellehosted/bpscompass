@@ -12,20 +12,49 @@ const ToastProvider = ToastPrimitives.Provider
 const ToastViewport = React.forwardRef<
   React.ElementRef<typeof ToastPrimitives.Viewport>,
   React.ComponentPropsWithoutRef<typeof ToastPrimitives.Viewport>
->(({ className, ...props }, ref) => (
-  <ToastPrimitives.Viewport
-    ref={ref}
-    className={cn(
-      "fixed top-0 z-[100] flex max-h-screen w-full flex-col-reverse p-4 sm:bottom-0 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
-      className
-    )}
-    {...props}
-  />
-))
+>(({ className, ...props }, ref) => {
+  const viewportRef = React.useRef<HTMLOListElement>(null)
+  React.useImperativeHandle(ref, () => viewportRef.current as HTMLOListElement)
+
+  // Promote the viewport to the browser's top layer. z-index only wins inside one stacking
+  // context, so a dialog or menu in another one could still cover the toasts; the top layer
+  // sits above every z-index, whatever opens later. Browsers without the Popover API fall back
+  // to the z-index below.
+  React.useEffect(() => {
+    const viewport = viewportRef.current
+    if (!viewport || typeof viewport.showPopover !== "function") return
+    try {
+      viewport.showPopover()
+    } catch {}
+    return () => {
+      try {
+        viewport.hidePopover()
+      } catch {}
+    }
+  }, [])
+
+  return (
+    <ToastPrimitives.Viewport
+      ref={viewportRef}
+      popover="manual"
+      className={cn(
+        // z: the largest 32-bit value, the fallback when the top layer isn't available.
+        // m-0 / border-0 / bg-transparent / overflow-visible / left-auto / bottom-auto: undo the
+        // browser's default [popover] box (centered, bordered, scrolling) so the viewport stays
+        // pinned to the corner exactly as before.
+        // pt: the app draws edge-to-edge under the status bar / Dynamic Island on phones, so
+        // start below the top safe-area inset instead of behind it.
+        "fixed top-0 left-auto bottom-auto z-[2147483647] m-0 flex max-h-screen w-full flex-col-reverse overflow-visible border-0 bg-transparent p-4 pt-[calc(1rem+env(safe-area-inset-top))] sm:bottom-0 sm:pt-4 sm:right-0 sm:top-auto sm:flex-col md:max-w-[420px]",
+        className
+      )}
+      {...props}
+    />
+  )
+})
 ToastViewport.displayName = ToastPrimitives.Viewport.displayName
 
 const toastVariants = cva(
-  "group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-[16px] border p-6 pr-8 shadow-hard transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-bottom-full",
+  "group pointer-events-auto relative flex w-full items-center justify-between space-x-4 overflow-hidden rounded-[16px] border p-6 pr-8 shadow-hard transition-all data-[swipe=cancel]:translate-x-0 data-[swipe=end]:translate-x-[var(--radix-toast-swipe-end-x)] data-[swipe=move]:translate-x-[var(--radix-toast-swipe-move-x)] data-[swipe=move]:transition-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[swipe=end]:animate-out data-[state=closed]:fade-out-80 data-[state=closed]:slide-out-to-top-full data-[state=closed]:sm:slide-out-to-right-full data-[state=open]:slide-in-from-top-full data-[state=open]:sm:slide-in-from-bottom-full",
   {
     variants: {
       variant: {

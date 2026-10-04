@@ -1,5 +1,6 @@
 "use client"
 
+import { notify } from "@/lib/notify"
 import { useAuth } from "@/contexts/auth-context"
 import { AdminDashboard } from "@/components/dashboardAdmin"
 import { useRouter } from "next/navigation"
@@ -26,7 +27,7 @@ export default function AdminPage() {
             setIsCoordinator(true)
             setIsVerifying(false)
           } else {
-            alert("You must be a coordinator to access the admin dashboard")
+            notify.error("You must be a coordinator to access the admin dashboard")
             router.push("/")
           }
         } else {

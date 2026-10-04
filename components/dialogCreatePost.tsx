@@ -1,5 +1,7 @@
 "use client"
 
+import { notify } from "@/lib/notify"
+import { toast } from "@/hooks/use-toast"
 import { useState, useCallback, memo, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import {
@@ -84,7 +86,7 @@ export const CreatePostDialog = memo(function CreatePostDialog({
       // Validate file type
       const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp']
       if (!validTypes.includes(file.type)) {
-        alert('File not supported. Please upload a valid image file (JPEG, PNG, GIF, or WebP).')
+        notify.error('File not supported. Please upload a valid image file (JPEG, PNG, GIF, or WebP).')
         event.target.value = ''
         return
       }
@@ -159,7 +161,7 @@ export const CreatePostDialog = memo(function CreatePostDialog({
           imageUrl = uploadData.data.url
         } else {
           const uploadError = await uploadResponse.json()
-          alert(uploadError.error || "Failed to upload image")
+          notify.error(uploadError.error || "Failed to upload image")
           setLoading(false)
           return
         }
@@ -183,7 +185,7 @@ export const CreatePostDialog = memo(function CreatePostDialog({
         setSelectedImage(null)
         setImagePreview(null)
         setOpen(false)
-        alert("Post created successfully!")
+        notify.success("Post created successfully!")
         onPostCreated?.()
 
         // Start cooldown timer (15 seconds)
@@ -195,19 +197,18 @@ export const CreatePostDialog = memo(function CreatePostDialog({
         const data = await response.json()
         // Show rate limit information if available
         if (response.status === 429 && data.remaining) {
-          alert(
-            `${data.error}\n\n` +
-            `Remaining today: ${data.remaining.day} posts\n` +
-            `Remaining this hour: ${data.remaining.hour} posts\n` +
-            `Remaining this minute: ${data.remaining.minute} posts`
-          )
+          toast({
+            variant: "destructive",
+            title: data.error,
+            description: `Remaining: ${data.remaining.day} today, ${data.remaining.hour} this hour, ${data.remaining.minute} this minute`,
+          })
         } else {
-          alert(data.error || "Failed to create post")
+          notify.error(data.error || "Failed to create post")
         }
       }
     } catch (error) {
       console.error("Error creating post:", error)
-      alert("Failed to create post. Please try again.")
+      notify.error("Failed to create post. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -272,7 +273,7 @@ export const CreatePostDialog = memo(function CreatePostDialog({
           <div className="space-y-1.5 sm:space-y-2">
             <Label htmlFor="post-image" className="text-sm">Image (Optional)</Label>
             {!imagePreview ? (
-              <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-3 sm:p-4 text-center">
+              <div className="border-2 border-dashed border-muted-foreground/25 rounded-[16px] p-3 sm:p-4 text-center">
                 <input
                   type="file"
                   id="post-image"
@@ -289,7 +290,7 @@ export const CreatePostDialog = memo(function CreatePostDialog({
               </div>
             ) : (
               <div className="relative">
-                <div className="aspect-video rounded-lg overflow-hidden border">
+                <div className="aspect-video rounded-[16px] overflow-hidden border">
                   <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
                 </div>
                 <Button

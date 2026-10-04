@@ -6,6 +6,7 @@ import { AuthProvider } from '@/contexts/auth-context'
 import { ThemeProvider } from '@/components/themeProvider'
 import { ServiceWorkerRegister } from '@/components/serviceWorkerRegister'
 import { Toaster } from '@/components/ui/toaster'
+import { ConfirmHost } from '@/components/ui/confirm-host'
 
 export const metadata: Metadata = {
   title: 'BPS Compass',
@@ -75,6 +76,7 @@ export default function RootLayout({
         >
           <AuthProvider>{children}</AuthProvider>
           <Toaster />
+          <ConfirmHost />
         </ThemeProvider>
         <Analytics />
       </body>

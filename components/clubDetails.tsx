@@ -1,5 +1,7 @@
 "use client"
 
+import { notify } from "@/lib/notify"
+import { confirmDialog } from "@/lib/confirm"
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import localFont from "next/font/local"
@@ -160,16 +162,20 @@ export function ClubDetailPage({ clubId }: { clubId: string }) {
 
     // Prevent presidents from leaving via this button
     if (club.memberRole === "president") {
-      alert("As president, please use the 'Leave Presidency' button to transfer leadership or unclaim the club.")
+      notify.error("As president, please use the 'Leave Presidency' button to transfer leadership or unclaim the club.")
       return
     }
 
     try {
       if (club.is_joined) {
         // Confirm before leaving
-        if (!confirm(`Are you sure you want to leave ${club.name}?`)) {
-          return
-        }
+        const confirmed = await confirmDialog({
+          title: "Leave club?",
+          description: `Are you sure you want to leave ${club.name}?`,
+          confirmLabel: "Leave",
+          destructive: true,
+        })
+        if (!confirmed) return
 
         const response = await fetch(`/api/clubs/${clubId}/join?userId=${user.id}`, {
           method: "DELETE",
@@ -177,7 +183,7 @@ export function ClubDetailPage({ clubId }: { clubId: string }) {
         if (response.ok) {
           await loadClubDetails()
         } else {
-          alert("Failed to leave club. Please try again.")
+          notify.error("Failed to leave club. Please try again.")
         }
       } else {
         const response = await fetch(`/api/clubs/${clubId}/join`, {
@@ -188,18 +194,24 @@ export function ClubDetailPage({ clubId }: { clubId: string }) {
         if (response.ok) {
           await loadClubDetails()
         } else {
-          alert("Failed to join club. Please try again.")
+          notify.error("Failed to join club. Please try again.")
         }
       }
     } catch (error) {
       console.error("Error joining/leaving club:", error)
-      alert("Failed to update membership. Please try again.")
+      notify.error("Failed to update membership. Please try again.")
     }
   }, [user?.id, club, clubId, loadClubDetails])
 
   const handleLeaveSponsor = useCallback(async () => {
     if (!user?.id || !club) return
-    if (!confirm(`Are you sure you want to leave your sponsorship of ${club.name}?`)) return
+    const confirmed = await confirmDialog({
+      title: "Leave sponsorship?",
+      description: `Are you sure you want to leave your sponsorship of ${club.name}?`,
+      confirmLabel: "Leave",
+      destructive: true,
+    })
+    if (!confirmed) return
 
     try {
       const response = await fetch(`/api/clubs/${clubId}/leave-sponsor`, {
@@ -211,20 +223,24 @@ export function ClubDetailPage({ clubId }: { clubId: string }) {
         await loadClubDetails()
       } else {
         const data = await response.json()
-        alert(data.error || "Failed to leave sponsorship")
+        notify.error(data.error || "Failed to leave sponsorship")
       }
     } catch (error) {
       console.error("Error leaving sponsorship:", error)
-      alert("Failed to leave sponsorship. Please try again.")
+      notify.error("Failed to leave sponsorship. Please try again.")
     }
   }, [user?.id, club, clubId, loadClubDetails])
 
   const handleDeletePost = useCallback(async (postId: string) => {
     if (!user?.id) return
 
-    if (!confirm("Are you sure you want to delete this post?")) {
-      return
-    }
+    const confirmed = await confirmDialog({
+      title: "Delete post?",
+      description: "Are you sure you want to delete this post?",
+      confirmLabel: "Delete",
+      destructive: true,
+    })
+    if (!confirmed) return
 
     try {
       const response = await fetch(`/api/posts/${postId}?userId=${user.id}`, {
@@ -236,18 +252,18 @@ export function ClubDetailPage({ clubId }: { clubId: string }) {
         setPosts((prev) => prev.filter((p) => p.id !== postId))
       } else {
         const data = await response.json()
-        alert(data.error || "Failed to delete post")
+        notify.error(data.error || "Failed to delete post")
       }
     } catch (error) {
       console.error("Error deleting post:", error)
-      alert("Failed to delete post. Please try again.")
+      notify.error("Failed to delete post. Please try again.")
     }
   }, [user?.id])
 
   // Same like/unlike flow as the home feed (components/homePage.tsx)
   const handleLike = useCallback(async (postId: string, isLiked: boolean) => {
     if (!user?.id) {
-      alert("Please log in to like posts")
+      notify.error("Please log in to like posts")
       return
     }
 

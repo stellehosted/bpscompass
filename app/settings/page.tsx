@@ -255,26 +255,26 @@ export default function SettingsPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-muted rounded-lg">
+                <div className="text-center p-4 bg-muted rounded-[16px]">
                   <Users className="h-6 w-6 mx-auto mb-2 text-primary" />
                   <p className="text-2xl font-bold">{stats?.clubsJoined || 0}</p>
                   <p className="text-xs text-muted-foreground">Clubs Joined</p>
                 </div>
 
-                <div className="text-center p-4 bg-muted rounded-lg">
+                <div className="text-center p-4 bg-muted rounded-[16px]">
                   <Crown className="h-6 w-6 mx-auto mb-2 text-sky-600" />
                   <p className="text-2xl font-bold">{stats?.clubsPresidentOf || 0}</p>
                   <p className="text-xs text-muted-foreground">President Of</p>
                 </div>
 
-                <div className="text-center p-4 bg-muted rounded-lg">
+                <div className="text-center p-4 bg-muted rounded-[16px]">
                   <Award className="h-6 w-6 mx-auto mb-2 text-green-600" />
                   <p className="text-2xl font-bold">{stats?.clubsOfficerOf || 0}</p>
                   <p className="text-xs text-muted-foreground">Officer Of</p>
                 </div>
 
                 {stats?.isSponsor && (
-                  <div className="text-center p-4 bg-muted rounded-lg">
+                  <div className="text-center p-4 bg-muted rounded-[16px]">
                     <Shield className="h-6 w-6 mx-auto mb-2 text-blue-600" />
                     <p className="text-2xl font-bold">{stats?.clubsSponsoring || 0}</p>
                     <p className="text-xs text-muted-foreground">Sponsoring</p>
@@ -284,13 +284,13 @@ export default function SettingsPage() {
             </CardContent>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-4 bg-muted rounded-lg">
+                <div className="text-center p-4 bg-muted rounded-[16px]">
                   <FileText className="h-6 w-6 mx-auto mb-2 text-primary" />
                   <p className="text-2xl font-bold">{stats?.postsCreated || 0}</p>
                   <p className="text-xs text-muted-foreground">Posts Created</p>
                 </div>
 
-                <div className="text-center p-4 bg-muted rounded-lg">
+                <div className="text-center p-4 bg-muted rounded-[16px]">
                   <Heart className="h-6 w-6 mx-auto mb-2 text-red-600" />
                   <p className="text-2xl font-bold">{stats?.postsLiked || 0}</p>
                   <p className="text-xs text-muted-foreground">Posts Liked</p>

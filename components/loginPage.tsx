@@ -1,5 +1,6 @@
 "use client"
 
+import { notify } from "@/lib/notify"
 import { useEffect, useState, type CSSProperties } from "react"
 import localFont from "next/font/local"
 import { RefreshCw } from "lucide-react"
@@ -228,7 +229,7 @@ export function LoginScreen() {
       window.location.reload()
     } catch (error) {
       console.error('Failed to reset:', error)
-      alert('Please close and reopen your browser')
+      notify.error('Please close and reopen your browser')
     }
   }
 

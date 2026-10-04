@@ -1,5 +1,6 @@
 "use client"
 
+import { notify } from "@/lib/notify"
 import { useState, useCallback } from "react"
 import Cropper from "react-easy-crop"
 import { Button } from "@/components/ui/button"
@@ -60,7 +61,7 @@ export function ImageCropDialog({
       onCropComplete(croppedFile)
     } catch (error) {
       console.error('Error cropping image:', error)
-      alert('Failed to crop image. Please try again.')
+      notify.error('Failed to crop image. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -76,7 +77,7 @@ export function ImageCropDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="relative flex-1 bg-gray-100 rounded-lg overflow-hidden">
+        <div className="relative flex-1 bg-gray-100 rounded-[16px] overflow-hidden">
           <Cropper
             image={imageSrc}
             crop={crop}

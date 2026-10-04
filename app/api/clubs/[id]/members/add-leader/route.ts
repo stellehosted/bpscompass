@@ -25,7 +25,7 @@ export async function POST(
     }
 
     // Validate role
-    const validLeaderRoles = ['officer', 'vice_president']
+    const validLeaderRoles = ['officer', 'vice_president', 'president']
     if (!validLeaderRoles.includes(role)) {
       return NextResponse.json(
         { success: false, error: 'Invalid leadership role' },
@@ -62,6 +62,13 @@ export async function POST(
     const memberResult = await pool.query(memberQuery, [clubId, targetUserId])
     
     if (memberResult.rows.length > 0) {
+      if (memberResult.rows[0].role === role) {
+        return NextResponse.json(
+          { success: false, error: 'This user already has that role in this club' },
+          { status: 409 }
+        )
+      }
+
       // User is already a member, update their role
       await pool.query(
         'UPDATE club_members SET role = $1 WHERE club_id = $2 AND user_id = $3',
@@ -80,7 +87,8 @@ export async function POST(
 
     return NextResponse.json({
       success: true,
-      message: 'Leader added successfully',
+      updated: memberResult.rows.length > 0,
+      message: memberResult.rows.length > 0 ? 'Member role updated successfully' : 'Leader added successfully',
     })
   } catch (error) {
     console.error('Error adding leader:', error)

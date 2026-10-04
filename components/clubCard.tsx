@@ -1,5 +1,6 @@
 "use client"
 
+import { notify } from "@/lib/notify"
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -126,7 +127,7 @@ export function ClubCard({ club, onJoinLeave, onLeaveSponsor, onChanged, showEdi
       )
     } catch (error) {
       console.error("Error loading club members:", error)
-      alert("Failed to load club members. Please try again.")
+      notify.error("Failed to load club members. Please try again.")
     }
   }, [club.id, club.name, user?.email])
 

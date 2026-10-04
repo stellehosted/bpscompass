@@ -1,5 +1,6 @@
 "use client"
 
+import { notify } from "@/lib/notify"
 import { useAuth } from "@/contexts/auth-context"
 import { SponsorDashboard } from "@/components/dashboardSponsor"
 import { useRouter } from "next/navigation"
@@ -29,7 +30,7 @@ export default function SponsorPage() {
           setIsVerifying(false)
         } else {
           // Not a sponsor, redirect
-          alert("You must be a verified teacher to access the sponsor dashboard")
+          notify.error("You must be a verified teacher to access the sponsor dashboard")
           router.push("/")
         }
       } catch (error) {
