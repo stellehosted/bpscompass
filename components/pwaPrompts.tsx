@@ -1,7 +1,7 @@
 "use client"
 
-import { useEffect, useState } from "react"
-import { Bell, Download, Share, SquarePlus } from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { Bell, ChevronDown, ChevronLeft, ChevronRight, Download, Share, SquarePlus, type LucideIcon } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { Button } from "@/components/ui/button"
 import {
@@ -28,11 +28,31 @@ const INSTALL_DISMISSED_KEY = "compass:install-prompt-dismissed"
 const NOTIFICATIONS_DISMISSED_KEY = "compass:notifications-prompt-dismissed"
 
 // Let the page paint (and any login redirect settle) before a dialog opens over it.
-const SHOW_DELAY_MS = 1500
+const SHOW_DELAY_MS = 1000
 
 // The shared DialogContent stretches to full height on phones; keep these prompts a
 // compact card centered on screen instead.
-const DIALOG_CARD_CLASS = "max-sm:bottom-auto max-sm:top-1/2 max-sm:-translate-y-1/2 sm:max-w-md"
+const DIALOG_CARD_CLASS =
+  "max-sm:bottom-auto max-sm:top-1/2 max-sm:-translate-y-1/2 max-sm:max-h-[calc(100dvh-2rem)] sm:max-w-md"
+
+// Screenshots live in public/install/. Order matches the real Safari flow.
+const IOS_INSTALL_STEPS: { image: string; text: React.ReactNode }[] = [
+  { image: "/install/ios-1.jpg", text: <>Tap the <strong>=</strong> menu <br />on the address bar&apos;s left edge</> },
+  { image: "/install/ios-2.jpg", text: <>Tap <Label icon={Share}>Share</Label></> },
+  { image: "/install/ios-3.jpg", text: <>Tap <Label icon={ChevronDown}>View More</Label></> },
+  { image: "/install/ios-4.jpg", text: <>Tap <Label icon={SquarePlus}>Add to Home Screen</Label><br></br><small>(You may need to scroll down)</small></> },
+  { image: "/install/ios-5.jpg", text: <>Tap <strong>Add</strong> in the top right corner<br /><small>(Keep <strong>Open as Web App</strong> on)</small></> },
+]
+
+// A bold label with its icon inline, matching what the user sees in Safari.
+function Label({ icon: Icon, children }: { icon: LucideIcon; children: React.ReactNode }) {
+  return (
+    <strong className="inline-flex items-center gap-1 align-middle">
+      <Icon className="h-4 w-4 shrink-0" aria-hidden />
+      {children}
+    </strong>
+  )
+}
 
 // Chrome's `beforeinstallprompt` isn't in lib.dom.d.ts.
 interface BeforeInstallPromptEvent extends Event {
@@ -110,70 +130,140 @@ function InstallPrompt() {
   }
 
   return (
+    /* -- Install App Prompt ------------------------ */
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className={DIALOG_CARD_CLASS}>
         <DialogHeader>
           <DialogTitle>Install BPS Compass</DialogTitle>
           <DialogDescription>
-            Add Compass to your home screen for quick access and to get notified about club posts.
+            Add BPS Compass to your Home Screen and get club notifications!
           </DialogDescription>
         </DialogHeader>
 
         <div>
           {platform === "ios" ? (
-            <ol className="space-y-3 text-sm">
-              <Step icon={<Share className="h-4 w-4" />}>
-                Tap the <strong>Share</strong> button in Safari (tap <strong>•••</strong> first if you don&apos;t see it)
-              </Step>
-              <Step icon={<SquarePlus className="h-4 w-4" />}>
-                Choose <strong>Add to Home Screen</strong>, then tap <strong>Add</strong>
-              </Step>
-              <Step icon={<Bell className="h-4 w-4" />}>
-                Open Compass from your home screen and sign in again
-              </Step>
-            </ol>
-          ) : installEvent ? (
-            <p className="text-sm text-muted-foreground">
-              It only takes a second, and you&apos;ll sign in again the first time you open the app.
-            </p>
+            <div className="space-y-3">
+              <IosInstallCarousel />
+            </div>
           ) : (
             <ol className="space-y-3 text-sm">
-              <Step icon={<Download className="h-4 w-4" />}>
-                Open your browser menu and choose <strong>Install app</strong> or <strong>Add to Home screen</strong>
-              </Step>
-              <Step icon={<Bell className="h-4 w-4" />}>
-                Open Compass from your home screen and sign in again
-              </Step>
+              <li className="flex items-start gap-3">
+                <span className="pt-1"><strong>1.</strong> Open your browser menu and choose <strong>Install app</strong> or <strong>Add to Home screen</strong></span>
+              </li>
+              <li className="flex items-start gap-3">
+                <span className="pt-1"><strong>2.</strong> Open <strong>BPS Compass</strong> from your Home Screen</span>
+              </li>
             </ol>
           )}
         </div>
 
-        {/* max-sm:flex-col: DialogFooter reverses on phones, which would put "Not now" above Install. */}
-        <DialogFooter className="max-sm:flex-col">
           {installEvent && (
             <Button onClick={handleInstall}>
               <Download className="mr-2 h-4 w-4" />
               Install
             </Button>
           )}
-          <Button variant={installEvent ? "ghost" : "default"} onClick={() => handleOpenChange(false)}>
-            {installEvent ? "Not now" : "Got it"}
-          </Button>
-        </DialogFooter>
       </DialogContent>
     </Dialog>
   )
 }
 
-function Step({ icon, children }: { icon: React.ReactNode; children: React.ReactNode }) {
+/** iOS Add to Home Screen steps (not on Android) **/
+function IosInstallCarousel() {
+  const [index, setIndex] = useState(0)
+  const touchStartX = useRef<number | null>(null)
+  const last = IOS_INSTALL_STEPS.length - 1
+
+  const go = (to: number) => setIndex(Math.min(last, Math.max(0, to)))
+
   return (
-    <li className="flex items-start gap-3">
-      <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted">{icon}</span>
-      <span className="pt-1">{children}</span>
-    </li>
+    <div
+      onTouchStart={(e) => {
+        touchStartX.current = e.touches[0].clientX
+      }}
+      onTouchEnd={(e) => {
+        if (touchStartX.current === null) return
+        const dx = e.changedTouches[0].clientX - touchStartX.current
+        touchStartX.current = null
+        if (Math.abs(dx) > 40) go(index + (dx < 0 ? 1 : -1))
+      }}
+    >
+      {/* -mx-3 pulls the arrows into the dialog's side padding; w-7 px-0 slims them down */}
+      <div className="-mx-3 flex items-center">
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="w-7 shrink-0 px-0"
+          onClick={() => go(index - 1)}
+          disabled={index === 0}
+          aria-label="Previous step"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+
+        {/* Every slide sits in the same grid cell, so the cell is as big as the largest one and
+            the dialog never changes size between steps. Only the current slide is visible;
+            keeping the rest mounted also preloads their images. */}
+        <div className="grid min-w-0 flex-1 justify-items-center" aria-live="polite">
+          {IOS_INSTALL_STEPS.map((step, i) => (
+            <div
+              key={step.image}
+              aria-hidden={i !== index}
+              className={`col-start-1 row-start-1 flex flex-col items-center gap-2 ${i === index ? "" : "invisible"}`}
+            >
+              {/* The picture centers in whatever room is left; the caption stays pinned to the bottom. */}
+              <div className="flex flex-1 items-center justify-center">
+                <img
+                  src={step.image}
+                  alt={`Step ${i + 1} screenshot`}
+                  // Tallest the picture can be before the dialog (max 100dvh - 2rem on phones) would have to scroll
+                  className="h-auto max-h-[clamp(8rem,calc(100dvh_-_18rem),30rem)] w-auto max-w-full rounded-[16px] shadow-hard"
+                />
+              </div>
+              <p className="text-center text-base">
+                {step.text}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          className="w-7 shrink-0 px-0"
+          onClick={() => go(index + 1)}
+          disabled={index === last}
+          aria-label="Next step"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </Button>
+      </div>
+
+      <div className="flex justify-center">
+        {IOS_INSTALL_STEPS.map((_, i) => (
+          // globals.css gives every button min-height: 36px on phones, which would stretch a
+          // bare dot into a tall pill. So the button is the tap target and the span is the dot.
+          <button
+            key={i}
+            type="button"
+            onClick={() => go(i)}
+            aria-label={`Go to step ${i + 1}`}
+            aria-current={i === index}
+            className="flex items-center px-1"
+          >
+            <span
+              className={`block h-1.5 rounded-full transition-all ${i === index ? "w-4 bg-primary" : "w-1.5 bg-muted-foreground/30"}`}
+            />
+          </button>
+        ))}
+      </div>
+    </div>
   )
 }
 
+/* -- Notifications Prompt ------------------------ */
 function NotificationPrompt() {
   // Shown on every browser. Which ones will display the permission prompt without a
   // tap isn't reliable to detect, so the button always supplies the tap and is the
