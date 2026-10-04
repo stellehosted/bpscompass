@@ -126,7 +126,7 @@ const footerStyle: CSSProperties = {
   position: "absolute",
   right: pct(1920 - 1495 - 361),
   bottom: pct(1080 - 967 - 82),
-  width: pct(361),
+  whiteSpace: "nowrap",
   fontFamily: AVENIR,
   fontWeight: 400,
   fontSize: pct(30),
@@ -150,6 +150,7 @@ const portraitButtonStyle: CSSProperties = {
 }
 
 const portraitFooterStyle: CSSProperties = {
+  whiteSpace: "nowrap",
   fontFamily: AVENIR,
   fontWeight: 400,
   fontSize: "clamp(0.875rem, 3.2vw, 1.25rem)",
