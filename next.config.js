@@ -44,7 +44,7 @@ const nextConfig = {
     unoptimized: true,
   },
 
-  allowedDevOrigins: ['*', '*.trycloudflare.com'],
+  allowedDevOrigins: ['*.*.*.*', '*.trycloudflare.com'],
   // Ensure proper bundling for serverless functions
   serverExternalPackages: ['pg', 'pg-native'],
   async headers() {
