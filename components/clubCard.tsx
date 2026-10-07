@@ -171,12 +171,6 @@ export function ClubCard({ club, onJoinLeave, onLeaveSponsor, onChanged, showEdi
         <ClaimClubDialog
           clubId={club.id}
           clubName={club.name}
-          userId={user.id}
-          userName={user.name || "User"}
-          userEmail={user.email}
-          userRole={user.role}
-          userGrade={user.grade}
-          userDepartment={user.department}
           onClaimSuccess={onChanged}
           trigger={<Button className={PRIMARY_BUTTON}>Claim!</Button>}
         />

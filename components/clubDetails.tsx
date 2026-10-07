@@ -352,12 +352,6 @@ export function ClubDetailPage({ clubId }: { clubId: string }) {
         <ClaimClubDialog
           clubId={club.id}
           clubName={club.name}
-          userId={user.id}
-          userName={user.name || "User"}
-          userEmail={user.email}
-          userRole={user.role}
-          userGrade={user.grade}
-          userDepartment={user.department}
           onClaimSuccess={loadClubDetails}
           trigger={<Button className={LEAVE_BUTTON}>Claim!</Button>}
         />

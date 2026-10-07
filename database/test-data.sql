@@ -13,10 +13,10 @@
 -- Users
 INSERT INTO users (id, email, name, role, grade, user_type) VALUES
   ('00000000-0000-0000-0000-000000000001', 'test.sponsor@berkeleyprep.org', 'Quincy Sponsor', 'sponsor', NULL, 'teacher'),
-  ('00000000-0000-0000-0000-000000000002', 'test.president@berkeleyprep.org', 'Gwen President', 'student', '12', 'student'),
-  ('00000000-0000-0000-0000-000000000003', 'test.vp@berkeleyprep.org', 'Obyn VP', 'student', '11', 'student'),
-  ('00000000-0000-0000-0000-000000000004', 'test.officer@berkeleyprep.org', 'Striker Officer', 'student', '10', 'student'),
-  ('00000000-0000-0000-0000-000000000005', 'test.member@berkeleyprep.org', 'Churchill Member', 'student', '9', 'student'),
+  ('00000000-0000-0000-0000-000000000002', 'test.president@berkeleyprep.org', 'Gwen President', 'student', 2027, 'student'),
+  ('00000000-0000-0000-0000-000000000003', 'test.vp@berkeleyprep.org', 'Obyn VP', 'student', 2028, 'student'),
+  ('00000000-0000-0000-0000-000000000004', 'test.officer@berkeleyprep.org', 'Striker Officer', 'student', 2029, 'student'),
+  ('00000000-0000-0000-0000-000000000005', 'test.member@berkeleyprep.org', 'Churchill Member', 'student', 2030, 'student'),
   ('00000000-0000-0000-0000-000000000006', 'test.coordinator@berkeleyprep.org', 'Benjamin Coordinator', 'admin', NULL, 'teacher')
 ON CONFLICT (id) DO NOTHING;
 

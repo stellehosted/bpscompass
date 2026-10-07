@@ -75,10 +75,10 @@ NEXT_PUBLIC_AZURE_CLIENT_ID=your-client-id-here
 
 ---
 # User Creation
-1. **User visits app** → Redirected to profile creation (if not logged in)
+1. **User visits app** → Shown the sign-in screen (if not logged in)
 2. **Microsoft Login** → User authenticates with school Microsoft account
 3. **Domain Validation** → Only @berkeleyprep.org emails are accepted
-4. **Profile Creation** → User creates profile with role, grade, interests, etc.
+4. **Profile Creation** → The account is created automatically on first sign-in; class year comes from their "Class of 20XX" Microsoft group
 5. **Access Granted** → User can now access all app features
 
 ---

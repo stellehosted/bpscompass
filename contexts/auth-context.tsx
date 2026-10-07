@@ -15,7 +15,6 @@ interface AuthContextType {
   isTeacher: boolean
   login: () => Promise<void>
   logout: () => void
-  createProfile: (profileData: Partial<UserProfile>) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -366,52 +365,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const createProfile = async (profileData: Partial<UserProfile>) => {
-    try {
-      if (!user) {
-        throw new Error("No authenticated user found")
-      }
-
-      // Update existing user profile via API
-      const response = await fetch('/api/users/update', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: profileData.name || user.name,
-          grade: profileData.grade,
-          department: profileData.department,
-        })
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.error || 'Failed to update profile')
-      }
-
-      const data = await response.json()
-      const updatedUser = data.user
-      
-      // Convert to UserProfile format
-      const updatedProfile: UserProfile = {
-        id: updatedUser.id,
-        email: updatedUser.email,
-        name: updatedUser.name,
-        role: updatedUser.role,
-        grade: updatedUser.grade,
-        department: updatedUser.department,
-        interests: profileData.interests || user.interests || [],
-        createdAt: new Date(updatedUser.created_at),
-        updatedAt: new Date(updatedUser.updated_at),
-      }
-      
-      setUser(updatedProfile)
-      setHasProfile(true)
-    } catch (error) {
-      console.error("Error updating profile:", error)
-      throw error
-    }
-  }
-
   const value: AuthContextType = {
     user,
     isAuthenticated,
@@ -420,7 +373,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isTeacher,
     login,
     logout,
-    createProfile,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

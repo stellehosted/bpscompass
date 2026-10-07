@@ -64,21 +64,23 @@ export async function POST(request: NextRequest) {
 
       // Signing in is also registration: match the existing account case-insensitively so a
       // differently-cased email can't create a duplicate, and refresh the name from Microsoft.
+      // The class year (stored in `grade`) comes from the "Class of 20XX" group; COALESCE keeps
+      // the stored value when Microsoft gave us none, since a failed lookup isn't "no group".
       const name = formatDisplayName(identity.name) || identity.email.split('@')[0]
       const result = await pool.query(
         `WITH updated AS (
-           UPDATE users SET name = $2::text, updated_at = CURRENT_TIMESTAMP
+           UPDATE users SET name = $2::text, grade = COALESCE($4::integer, grade), updated_at = CURRENT_TIMESTAMP
            WHERE lower(email) = lower($1::text)
            RETURNING ${USER_COLUMNS}
          ), inserted AS (
-           INSERT INTO users (id, email, name, role, created_at, updated_at)
-           SELECT $3::uuid, lower($1::text), $2::text, 'student', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+           INSERT INTO users (id, email, name, role, grade, created_at, updated_at)
+           SELECT $3::uuid, lower($1::text), $2::text, 'student', $4::integer, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
            WHERE NOT EXISTS (SELECT 1 FROM updated)
-           ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, updated_at = CURRENT_TIMESTAMP
+           ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name, grade = COALESCE(EXCLUDED.grade, users.grade), updated_at = CURRENT_TIMESTAMP
            RETURNING ${USER_COLUMNS}
          )
          SELECT * FROM updated UNION ALL SELECT * FROM inserted`,
-        [identity.email, name, randomUUID()]
+        [identity.email, name, randomUUID(), identity.classYear]
       )
       user = result.rows[0]
     }

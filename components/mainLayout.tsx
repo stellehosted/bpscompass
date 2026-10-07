@@ -7,7 +7,6 @@ import { HomeContent } from "@/components/homePage"
 import { ClubsContent } from "@/components/clubsPage"
 import { NotificationsContent } from "@/components/notificationsPage"
 import { useAuth } from "@/contexts/auth-context"
-import { ProfileCreation } from "@/components/profileCreation"
 import { LoginScreen } from "@/components/loginPage"
 
 type ActiveSection = "home" | "clubs" | "notifications"
@@ -20,7 +19,7 @@ function MainLayoutContent() {
   const router = useRouter()
   // Start from the URL so coming back to ?section=clubs doesn't flash the Home tab first
   const [activeSection, setActiveSection] = useState<ActiveSection>(parseSection(searchParams.get("section")))
-  const { user, isAuthenticated, isLoading, hasProfile, logout } = useAuth()
+  const { user, isAuthenticated, isLoading, logout } = useAuth()
 
   // Read section from URL on mount
   useEffect(() => {
@@ -42,11 +41,6 @@ function MainLayoutContent() {
   // Show login screen if not authenticated
   if (!isAuthenticated) {
     return <LoginScreen />
-  }
-
-  // Show profile creation if authenticated but no profile
-  if (!hasProfile) {
-    return <ProfileCreation />
   }
 
   // Show main app if authenticated and profile exists
