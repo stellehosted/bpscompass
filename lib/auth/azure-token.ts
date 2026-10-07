@@ -49,7 +49,11 @@ async function fetchClassYear(accessToken: string): Promise<number | null> {
         headers: { Authorization: `Bearer ${accessToken}` },
         signal: AbortSignal.timeout(4000),
       })
-      if (!response.ok) return null
+      if (!response.ok) {
+        // Otherwise a missing permission (403) looks exactly like "user has no class group"
+        console.warn(`Class year lookup failed: Graph returned ${response.status}`)
+        return null
+      }
       const body = await response.json()
       for (const group of body.value ?? []) {
         const match = CLASS_GROUP.exec(group.displayName ?? "")
