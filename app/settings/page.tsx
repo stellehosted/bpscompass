@@ -171,8 +171,8 @@ export default function SettingsPage() {
               <div className="flex items-center gap-3">
                 <Building className="h-5 w-5 text-muted-foreground" />
                 <div>
-                  <p className="text-sm text-muted-foreground">Grade</p>
-                  <p className="font-medium">{user.grade}</p>
+                  <p className="text-sm text-muted-foreground">Class</p>
+                  <p className="font-medium">Class of {user.grade}</p>
                 </div>
               </div>
             )}

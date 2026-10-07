@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) UNIQUE NOT NULL,
     name VARCHAR(255) NOT NULL,
     role VARCHAR(20) DEFAULT 'student' CHECK (role IN ('student', 'sponsor', 'admin')),
-    grade VARCHAR(20),
+    grade INTEGER, -- graduation year (2027 = Class of 2027), synced from the Entra "Class of 20XX" group
     department VARCHAR(100),
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP

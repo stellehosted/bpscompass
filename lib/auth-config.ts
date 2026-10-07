@@ -79,7 +79,7 @@ export interface UserProfile {
   email: string
   name: string
   role: "student" | "sponsor" | "admin"
-  grade?: string // For students
+  grade?: number | null // Graduation year (2027 = Class of 2027), from the Entra group
   department?: string // For sponsors
   interests?: string[]
   userType?: string // From Azure AD - 'None' for teachers/staff

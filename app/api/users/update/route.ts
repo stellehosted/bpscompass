@@ -2,17 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import pool from '@/lib/db'
 import { requireUser } from '@/lib/auth/session'
 
-// PUT /api/users/update - Update your own profile (name, grade, department)
+// PUT /api/users/update - Update your own profile (name, department)
 export async function PUT(request: NextRequest) {
   try {
     const auth = await requireUser(request)
     if (!auth.ok) return auth.response
 
     const body = await request.json()
-    const { name, grade, department } = body
+    const { name, department } = body
 
     // Roles are never self-assigned: they come from club membership, sponsorship and the
-    // coordinator list, so `role` in the request is ignored.
+    // coordinator list, so `role` in the request is ignored. The same goes for `grade`, which
+    // comes from the Microsoft "Class of 20XX" group at sign-in.
     const updateFields: string[] = []
     const values: any[] = []
     let paramIndex = 1
@@ -26,10 +27,6 @@ export async function PUT(request: NextRequest) {
       }
       updateFields.push(`name = $${paramIndex++}`)
       values.push(name.trim())
-    }
-    if (grade !== undefined) {
-      updateFields.push(`grade = $${paramIndex++}`)
-      values.push(grade)
     }
     if (department !== undefined) {
       updateFields.push(`department = $${paramIndex++}`)

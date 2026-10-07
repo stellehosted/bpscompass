@@ -211,17 +211,14 @@ export function validateRole(role: string): { valid: boolean; sanitized: string;
 }
 
 /**
- * Validate grade
+ * Validate grade (a graduation year, e.g. 2027 for the Class of 2027)
  */
-export function validateGrade(grade: string): { valid: boolean; sanitized: string; error?: string } {
-  const validGrades = ['9', '10', '11', '12']
-  const sanitized = sanitizeText(grade.trim())
-
-  if (!validGrades.includes(sanitized)) {
-    return { valid: false, sanitized, error: 'Invalid grade' }
+export function validateGrade(grade: number): { valid: boolean; error?: string } {
+  if (!Number.isInteger(grade) || grade < 2000 || grade > 2100) {
+    return { valid: false, error: 'Invalid grade' }
   }
 
-  return { valid: true, sanitized }
+  return { valid: true }
 }
 
 /**

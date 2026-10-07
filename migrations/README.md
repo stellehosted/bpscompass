@@ -44,3 +44,16 @@ ALTER TABLE users DROP COLUMN IF EXISTS user_type;
 - Migration is idempotent (safe to run multiple times)
 - Existing data is not affected
 - Foreign keys use CASCADE for cleanup
+
+## Grade → Class Year Migration
+
+`users.grade` now holds the graduation year as an INTEGER (2027 = Class of 2027), taken from the
+user's Microsoft "Class of 20XX" group each time they sign in.
+
+```bash
+psql $DATABASE_URL -f migrations/convert_grade_to_class_year.sql
+```
+
+Existing `'9'`-`'12'` values are converted relative to the current school year (idempotent).
+
+Everyone else picks up their class year the next time they sign in, so there's no separate backfill.

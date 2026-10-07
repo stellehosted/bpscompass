@@ -105,7 +105,7 @@ export function UserSettingsDialog({ open, onOpenChange, user, isTeacher }: User
                 )}
                 {user.grade && (
                   <Badge variant="outline" className="text-xs">
-                    Grade {user.grade}
+                    Class of {user.grade}
                   </Badge>
                 )}
               </div>

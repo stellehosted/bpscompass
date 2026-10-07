@@ -17,12 +17,6 @@ import { Crown, AlertTriangle } from "lucide-react"
 interface ClaimClubDialogProps {
   clubId: string
   clubName: string
-  userId: string
-  userName: string
-  userEmail: string
-  userRole?: string
-  userGrade?: string
-  userDepartment?: string
   onClaimSuccess: () => void
   // Replaces the default "Claim Club" button, e.g. the club card's primary button.
   trigger?: React.ReactNode
@@ -31,12 +25,6 @@ interface ClaimClubDialogProps {
 export function ClaimClubDialog({ 
   clubId, 
   clubName, 
-  userId, 
-  userName, 
-  userEmail, 
-  userRole, 
-  userGrade, 
-  userDepartment, 
   trigger,
   onClaimSuccess 
 }: ClaimClubDialogProps) {
@@ -56,15 +44,7 @@ export function ClaimClubDialog({
       const response = await fetch(`/api/clubs/${clubId}/claim`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          userId,
-          confirmed: true,
-          userEmail,
-          userName,
-          userRole,
-          userGrade,
-          userDepartment,
-        }),
+        body: JSON.stringify({ confirmed: true }),
       })
 
       if (response.ok) {
